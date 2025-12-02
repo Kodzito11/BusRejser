@@ -45,6 +45,7 @@
 			Status = status;
 			Type = type;
 			Kapasitet = kapasitet;
+			Faceliteter = new List<Facilitet>();
 		}
 
 		public static Bus Create(
