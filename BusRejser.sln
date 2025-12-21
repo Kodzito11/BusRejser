@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35707.178 d17.12
+VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusRejser", "BusRejser\BusRejser.csproj", "{9AD85355-356A-448D-91A1-D929E9CDD7B2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusRejserLibrary", "BusRejserLibrary\BusRejserLibrary.csproj", "{A816EFB5-7007-4BE0-8827-3571F85403F9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,8 +17,15 @@ Global
 		{9AD85355-356A-448D-91A1-D929E9CDD7B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9AD85355-356A-448D-91A1-D929E9CDD7B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9AD85355-356A-448D-91A1-D929E9CDD7B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A816EFB5-7007-4BE0-8827-3571F85403F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A816EFB5-7007-4BE0-8827-3571F85403F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A816EFB5-7007-4BE0-8827-3571F85403F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A816EFB5-7007-4BE0-8827-3571F85403F9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {14F723BF-093B-4467-868A-33668F1102EE}
 	EndGlobalSection
 EndGlobal

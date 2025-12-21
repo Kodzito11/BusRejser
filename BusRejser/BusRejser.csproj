@@ -12,4 +12,10 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="BusRejserLibrary">
+      <HintPath>..\BusRejserLibrary\bin\Debug\net8.0\BusRejserLibrary.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

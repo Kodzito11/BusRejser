@@ -1,6 +1,11 @@
-﻿using MySqlConnector; //skal bruge den her?
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using MySqlConnector;
 
-namespace BusRejser.Database
+namespace BusRejserLibrary.Database
 {
 	public class DBConnection
 	{
@@ -15,5 +20,6 @@ namespace BusRejser.Database
 		{
 			return new MySqlConnection(_connectionString);
 		}
+
 	}
 }
