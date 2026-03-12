@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
-using BusRejserLibrary.Models;
+﻿using BusRejserLibrary.Models;
 using BusRejserLibrary.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 
 namespace BusRejser.Controllers
 {
@@ -31,6 +32,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpPost]
+		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult<int> Create([FromBody] BusCreateRequest request)
 		{
 			var bus = Bus.Create(
@@ -47,6 +49,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpPut("{id:int}")]
+		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult Update(int id, [FromBody] BusUpdateRequest request)
 		{
 			var bus = _busService.GetById(id);
@@ -64,6 +67,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpDelete("{id:int}")]
+		[Authorize (Roles = "Admin,Medarbejder")]
 		public ActionResult Delete(int id)
 		{
 			var ok = _busService.Delete(id);
@@ -77,6 +81,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpPost("{id:int}/faciliteter/{facilitetId:int}")]
+		[Authorize (Roles = "Admin,Medarbejder")]
 		public ActionResult AddFacilitet(int id, int facilitetId)
 		{
 			var ok = _busService.AddFacilitet(id, facilitetId);
@@ -84,6 +89,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpDelete("{id:int}/faciliteter/{facilitetId:int}")]
+		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult RemoveFacilitet(int id, int facilitetId)
 		{
 			var ok = _busService.RemoveFacilitet(id, facilitetId);

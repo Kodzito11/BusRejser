@@ -1,29 +1,92 @@
+using BusRejser.Services;
 using BusRejserLibrary.Database;
 using BusRejserLibrary.Repositories;
 using BusRejserLibrary.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+	options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+	{
+		Name = "Authorization",
+		Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+		Scheme = "bearer",
+		BearerFormat = "JWT",
+		In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+		Description = "Skriv: Bearer {token}"
+	});
+
+	options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+	{
+		{
+			new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+			{
+				Reference = new Microsoft.OpenApi.Models.OpenApiReference
+				{
+					Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+					Id = "Bearer"
+				}
+			},
+			new string[] {}
+		}
+	});
+});
 
 var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connStr))
 	throw new Exception("Connection string 'DefaultConnection' mangler.");
 
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+	throw new Exception("Jwt:Secret mangler i appsettings.json.");
+
 builder.Services.AddSingleton(new DBConnection(connStr));
 
+// CORS
+builder.Services.AddCors(options =>
+{
+	options.AddPolicy("dev", p =>
+		p.AllowAnyOrigin()
+		 .AllowAnyHeader()
+		 .AllowAnyMethod());
+});
+
+// JWT Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+	.AddJwtBearer(options =>
+	{
+		options.TokenValidationParameters = new TokenValidationParameters
+		{
+			ValidateIssuer = false,
+			ValidateAudience = false,
+			ValidateLifetime = true,
+			ValidateIssuerSigningKey = true,
+			IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+		};
+	});
+
 // Repositories
-builder.Services.AddScoped(_ => new BusRepository(connStr)); // bruger din eksisterende
+builder.Services.AddScoped(_ => new BusRepository(connStr));
+builder.Services.AddScoped(_ => new UserRepository(connStr));
 builder.Services.AddScoped<FacilitetRepository>();
 builder.Services.AddScoped<BusFacilitetRepository>();
+builder.Services.AddScoped<RejseRepository>();
+builder.Services.AddScoped<BookingRepository>();
 
 // Services
 builder.Services.AddScoped<BusService>();
 builder.Services.AddScoped<FacilitetService>();
-
-builder.Services.AddSwaggerGen(); 
+builder.Services.AddScoped<RejseService>();
+builder.Services.AddScoped<PasswordService>();
+builder.Services.AddScoped(_ => new JwtService(jwtSecret));
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<BookingService>();
 
 var app = builder.Build();
 
@@ -33,5 +96,11 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
+app.UseCors("dev");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
+
 app.Run();

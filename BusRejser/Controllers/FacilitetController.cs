@@ -1,11 +1,13 @@
-﻿using System.Collections.Generic;
-using BusRejserLibrary.Models;
+﻿using BusRejserLibrary.Models;
 using BusRejserLibrary.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 
 namespace BusRejser.Controllers
 {
 	[ApiController]
+	[Authorize]
 	[Route("api/[controller]")]
 	public class FacilitetController : ControllerBase
 	{
@@ -23,6 +25,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpPost]
+		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult<int> Create([FromBody] FacilitetCreateRequest request)
 		{
 			var f = Facilitet.Create(
@@ -38,6 +41,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpDelete("{id:int}")]
+		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult Delete(int id)
 		{
 			var ok = _facilitetService.Delete(id);
