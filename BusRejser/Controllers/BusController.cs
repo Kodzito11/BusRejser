@@ -3,6 +3,8 @@ using BusRejserLibrary.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace BusRejser.Controllers
 {
@@ -41,7 +43,8 @@ namespace BusRejser.Controllers
 				request.Busselskab,
 				request.Status,
 				request.Type,
-				request.Kapasitet
+				request.Kapasitet,
+				request.ImageUrl
 			);
 
 			var newId = _busService.Create(bus);
@@ -67,7 +70,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpDelete("{id:int}")]
-		[Authorize (Roles = "Admin,Medarbejder")]
+		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult Delete(int id)
 		{
 			var ok = _busService.Delete(id);
@@ -81,7 +84,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpPost("{id:int}/faciliteter/{facilitetId:int}")]
-		[Authorize (Roles = "Admin,Medarbejder")]
+		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult AddFacilitet(int id, int facilitetId)
 		{
 			var ok = _busService.AddFacilitet(id, facilitetId);
@@ -95,17 +98,42 @@ namespace BusRejser.Controllers
 			var ok = _busService.RemoveFacilitet(id, facilitetId);
 			return ok ? Ok() : NotFound();
 		}
-	}
 
-	public class BusCreateRequest
-	{
-		public string Registreringnummer { get; set; }
-		public string Model { get; set; }
-		public string Busselskab { get; set; }
-		public BusStatus Status { get; set; }
-		public BusType Type { get; set; }
-		public int Kapasitet { get; set; }
-	}
 
-	public class BusUpdateRequest : BusCreateRequest { }
+		[HttpPost("{id:int}/image")]
+		[Authorize(Roles = "Admin,Medarbejder")]
+		public async Task<ActionResult> UploadImage(int id, IFormFile file)
+		{
+			try
+			{
+				var imageUrl = await _busService.UploadImageAsync(id, file);
+				return Ok(new { message = "Billede uploadet.", imageUrl });
+			}
+			catch (FileNotFoundException ex)
+			{
+				return NotFound(new { message = ex.Message });
+			}
+			catch (ArgumentException ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+			catch (Exception)
+			{
+				return StatusCode(500, new { message = "Noget gik galt under upload." });
+			}
+		}
+
+		public class BusCreateRequest
+		{
+			public string Registreringnummer { get; set; }
+			public string Model { get; set; }
+			public string Busselskab { get; set; }
+			public BusStatus Status { get; set; }
+			public BusType Type { get; set; }
+			public int Kapasitet { get; set; }
+			public string? ImageUrl { get; set; }
+		}
+
+		public class BusUpdateRequest : BusCreateRequest { }
+	}
 }

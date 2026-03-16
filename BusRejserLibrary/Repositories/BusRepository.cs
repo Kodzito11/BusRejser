@@ -19,8 +19,8 @@ namespace BusRejserLibrary.Repositories
 			if (bus == null) throw new ArgumentNullException(nameof(bus));
 
 			const string sql = @"
-			INSERT INTO bus (Registreringnummer, Model, Busselskab, Status, Type, Kapasitet)
-			VALUES (@reg, @model, @selskab, @status, @type, @kap);
+			INSERT INTO bus (Registreringnummer, Model, Busselskab, Status, Type, Kapasitet, ImageUrl)
+			VALUES (@reg, @model, @selskab, @status, @type, @kap, @imageUrl);
 			SELECT LAST_INSERT_ID();";
 
 			using var conn = new MySqlConnection(_connectionString);
@@ -33,6 +33,7 @@ namespace BusRejserLibrary.Repositories
 			cmd.Parameters.AddWithValue("@status", (int)bus.Status);
 			cmd.Parameters.AddWithValue("@type", (int)bus.Type);
 			cmd.Parameters.AddWithValue("@kap", bus.Kapasitet);
+			cmd.Parameters.AddWithValue("@imageUrl", (object?)bus.ImageUrl ?? DBNull.Value);
 
 			var idObj = cmd.ExecuteScalar();
 			var newId = Convert.ToInt32(idObj);
@@ -44,7 +45,7 @@ namespace BusRejserLibrary.Repositories
 		public Bus? GetById(int id)
 		{
 			const string sql = @"
-			SELECT busId, Registreringnummer, Model, Busselskab, Status, Type, Kapasitet
+			SELECT busId, Registreringnummer, Model, Busselskab, Status, Type, Kapasitet, ImageUrl
 			FROM bus
 			WHERE busId = @id
 			LIMIT 1;";
@@ -64,7 +65,7 @@ namespace BusRejserLibrary.Repositories
 		public List<Bus> GetAll()
 		{
 			const string sql = @"
-			SELECT busId, Registreringnummer, Model, Busselskab, Status, Type, Kapasitet
+			SELECT busId, Registreringnummer, Model, Busselskab, Status, Type, Kapasitet, ImageUrl
 			FROM bus;";
 
 			var list = new List<Bus>();
@@ -92,7 +93,8 @@ namespace BusRejserLibrary.Repositories
 				Busselskab = @selskab,
 				Status = @status,
 				Type = @type,
-				Kapasitet = @kap
+				Kapasitet = @kap,
+				ImageUrl = @imageUrl
 			WHERE busId = @id;";
 
 			using var conn = new MySqlConnection(_connectionString);
@@ -106,6 +108,7 @@ namespace BusRejserLibrary.Repositories
 			cmd.Parameters.AddWithValue("@status", (int)bus.Status);
 			cmd.Parameters.AddWithValue("@type", (int)bus.Type);
 			cmd.Parameters.AddWithValue("@kap", bus.Kapasitet);
+			cmd.Parameters.AddWithValue("@imageUrl", (object?)bus.ImageUrl ?? DBNull.Value);
 
 			return cmd.ExecuteNonQuery() > 0;
 		}
@@ -135,9 +138,13 @@ namespace BusRejserLibrary.Repositories
 			var status = (BusStatus)reader.GetInt32("Status");
 			var type = (BusType)reader.GetInt32("Type");
 			var kap = reader.GetInt32("Kapasitet");
+			var imageUrl = reader.IsDBNull(reader.GetOrdinal("ImageUrl"))
+				? null
+				: reader.GetString("ImageUrl");
 
-			var bus = Bus.Create(reg, model, selskab, status, type, kap);
+			var bus = Bus.Create(reg, model, selskab, status, type, kap, imageUrl);
 			bus.busId = busId;
+			bus.ImageUrl = imageUrl;
 
 			// hvis Faceliteter ikke er sat i din Bus.Create -> undgå null senere
 			bus.Faceliteter ??= new List<Facilitet>();

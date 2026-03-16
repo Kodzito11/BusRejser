@@ -30,7 +30,8 @@ namespace BusRejserLibrary.Models
 		public BusStatus Status { get; set; }
 		public BusType Type { get; set; }
 		public int Kapasitet { get; set; }
-		public List<Facilitet> Faceliteter { get; set; }
+		public List<Facilitet> Faceliteter { get; set; } = new();
+		public string? ImageUrl { get; set; }
 
 
 		///Factory method
@@ -41,7 +42,8 @@ namespace BusRejserLibrary.Models
 			string busselskab,
 			BusStatus status,
 			BusType type,
-			int kapasitet
+			int kapasitet,
+			string? imageUrl
 			)
 		{
 			Registreringnummer = regNr;
@@ -50,6 +52,7 @@ namespace BusRejserLibrary.Models
 			Status = status;
 			Type = type;
 			Kapasitet = kapasitet;
+			ImageUrl = imageUrl;
 		}
 
 		public static Bus Create(
@@ -58,7 +61,8 @@ namespace BusRejserLibrary.Models
 			string busselskab,
 			BusStatus status,
 			BusType type,
-			int kapasitet
+			int kapasitet,
+			string imageUrl
 			)
 		{
 
@@ -71,7 +75,7 @@ namespace BusRejserLibrary.Models
 			if (kapasitet <= 0)
 				throw new ArgumentOutOfRangeException(nameof(kapasitet));
 
-			return new Bus(regNr, model, busselskab, status, type, kapasitet);
+			return new Bus(regNr, model, busselskab, status, type, kapasitet, imageUrl);
 
 		}
 

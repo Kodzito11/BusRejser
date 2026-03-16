@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace BusRejserLibrary.Services
 {
@@ -43,6 +45,98 @@ namespace BusRejserLibrary.Services
 			}
 
 			return list;
+		}
+
+		public async Task<string> UploadImageAsync(int busId, IFormFile file)
+		{
+			var bus = _busRepository.GetById(busId);
+			if (bus == null)
+				throw new FileNotFoundException("Bus ikke fundet.");
+
+			if (file == null || file.Length == 0)
+				throw new ArgumentException("Du skal vælge en fil.");
+
+			var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+			var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+			if (!allowedExtensions.Contains(extension))
+				throw new ArgumentException("Kun JPG, JPEG, PNG og WEBP er tilladt.");
+
+			if (string.IsNullOrWhiteSpace(file.ContentType) || !file.ContentType.StartsWith("image/"))
+				throw new ArgumentException("Filen skal være et billede.");
+
+			const long maxBytes = 5 * 1024 * 1024;
+			if (file.Length > maxBytes)
+				throw new ArgumentException("Filen er for stor. Maks 5 MB.");
+
+			await using var readStream = file.OpenReadStream();
+			using var image = await Image.LoadAsync(readStream);
+
+			if (image.Width < 800 || image.Height < 450)
+				throw new ArgumentException("Billedet er for lille. Minimum er 800x450.");
+
+			const int targetWidth = 1280;
+			const int targetHeight = 720;
+			const double targetRatio = (double)targetWidth / targetHeight;
+			var currentRatio = (double)image.Width / image.Height;
+
+			int cropWidth;
+			int cropHeight;
+			int cropX;
+			int cropY;
+
+			if (currentRatio > targetRatio)
+			{
+				// billedet er for bredt -> skær siderne
+				cropHeight = image.Height;
+				cropWidth = (int)(cropHeight * targetRatio);
+				cropX = (image.Width - cropWidth) / 2;
+				cropY = 0;
+			}
+			else
+			{
+				// billedet er for højt / for kvadratisk -> skær top og bund
+				cropWidth = image.Width;
+				cropHeight = (int)(cropWidth / targetRatio);
+				cropX = 0;
+				cropY = (image.Height - cropHeight) / 2;
+			}
+
+			image.Mutate(x => x
+				.Crop(new Rectangle(cropX, cropY, cropWidth, cropHeight))
+				.Resize(targetWidth, targetHeight)
+			);
+
+			var uploadsFolder = Path.Combine(
+				Directory.GetCurrentDirectory(),
+				"wwwroot",
+				"uploads",
+				"buses"
+			);
+
+			Directory.CreateDirectory(uploadsFolder);
+
+			var fileName = $"{Guid.NewGuid()}{extension}";
+			var fullPath = Path.Combine(uploadsFolder, fileName);
+
+			await image.SaveAsync(fullPath);
+
+			if (!string.IsNullOrWhiteSpace(bus.ImageUrl))
+			{
+				var oldFileName = Path.GetFileName(bus.ImageUrl);
+				var oldPath = Path.Combine(uploadsFolder, oldFileName);
+
+				if (File.Exists(oldPath))
+					File.Delete(oldPath);
+			}
+
+			bus.ImageUrl = $"/uploads/buses/{fileName}";
+
+			var updated = _busRepository.Update(bus);
+			if (!updated)
+				throw new Exception("Kunne ikke gemme billedesti.");
+
+			return bus.ImageUrl;
 		}
 
 		public bool AddFacilitet(int busId, int facilitetId)
