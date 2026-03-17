@@ -78,7 +78,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpGet("mine")]
-		[Authorize]
+		[Authorize (Roles = "Kunde")]
 		public ActionResult<List<Booking>> GetMine()
 		{
 			var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
