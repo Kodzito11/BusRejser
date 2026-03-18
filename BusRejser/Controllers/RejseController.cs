@@ -59,6 +59,24 @@ namespace BusRejser.Controllers
 			var ok = _service.Delete(id);
 			return ok ? Ok() : NotFound();
 		}
+
+		[HttpPut("{id:int}")]
+		[Authorize(Roles = "Admin,Medarbejder")]
+		public ActionResult Update(int id, [FromBody] RejseCreateRequest request)
+		{
+			var rejse = Rejse.Create(
+				request.Title,
+				request.Destination,
+				request.StartAt,
+				request.EndAt,
+				request.Price,
+				request.MaxSeats,
+				request.BusId
+			);
+
+			var ok = _service.Update(id, rejse);
+			return ok ? Ok() : NotFound();
+		}
 	}
 
 	public class RejseCreateRequest

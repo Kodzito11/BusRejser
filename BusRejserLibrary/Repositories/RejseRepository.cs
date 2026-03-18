@@ -92,6 +92,35 @@ namespace BusRejserLibrary.Repositories
 			return cmd.ExecuteNonQuery() > 0;
 		}
 
+		public bool Update(int id, Rejse rejse)
+		{
+			const string sql = @"
+				UPDATE rejse
+				SET title = @title,
+					destination = @destination,
+					startAt = @startAt,
+					endAt = @endAt,
+					price = @price,
+					maxSeats = @maxSeats,
+					busId = @busId
+				WHERE rejseId = @id;";
+
+			using var conn = _db.GetConnection();
+			conn.Open();
+
+			using var cmd = new MySqlCommand(sql, conn);
+			cmd.Parameters.AddWithValue("@id", id);
+			cmd.Parameters.AddWithValue("@title", rejse.Title);
+			cmd.Parameters.AddWithValue("@destination", rejse.Destination);
+			cmd.Parameters.AddWithValue("@startAt", rejse.StartAt);
+			cmd.Parameters.AddWithValue("@endAt", rejse.EndAt);
+			cmd.Parameters.AddWithValue("@price", rejse.Price);
+			cmd.Parameters.AddWithValue("@maxSeats", rejse.MaxSeats);
+			cmd.Parameters.AddWithValue("@busId", (object?)rejse.BusId ?? DBNull.Value);
+
+			return cmd.ExecuteNonQuery() > 0;
+		}
+
 		private static Rejse Map(MySqlDataReader reader)
 		{
 			var id = reader.GetInt32("rejseId");
