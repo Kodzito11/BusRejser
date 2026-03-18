@@ -36,6 +36,11 @@ namespace BusRejserLibrary.Services
 			}
 		}
 
+		public List<Booking> GetAll()
+		{
+			return _bookingRepository.GetAll();
+		}
+
 		public Booking? GetById(int id) => _bookingRepository.GetById(id);
 
 		public List<Booking> GetByRejseId(int rejseId) => _bookingRepository.GetByRejseId(rejseId);

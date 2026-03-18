@@ -17,6 +17,22 @@ namespace BusRejser.Controllers
 			_bookingService = bookingService;
 		}
 
+		[HttpGet]
+		[Authorize(Roles = "Admin,Medarbejder")]
+		public ActionResult<IEnumerable<Booking>> GetAll()
+		{
+			try
+			{
+				var bookings = _bookingService.GetAll();
+				return Ok(bookings);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(ex.Message);
+			}
+		}
+
+
 		[HttpPost]
 		[AllowAnonymous]
 		public ActionResult Create([FromBody] BookingCreateRequest request)

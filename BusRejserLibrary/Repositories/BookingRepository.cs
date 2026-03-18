@@ -42,6 +42,38 @@ namespace BusRejserLibrary.Repositories
 			return newId;
 		}
 
+		public List<Booking> GetAll()
+		{
+			var bookings = new List<Booking>();
+
+			using var conn = _db.GetConnection();
+			conn.Open();
+
+			using var cmd = conn.CreateCommand();
+			cmd.CommandText = @"
+				SELECT 
+					bookingId,
+					rejseId,
+					userId,
+					bookingReference,
+					kundeNavn,
+					kundeEmail,
+					antalPladser,
+					status,
+					createdAt
+				FROM booking
+				ORDER BY bookingId DESC";
+
+			using var reader = cmd.ExecuteReader();
+
+			while (reader.Read())
+			{
+				bookings.Add(Map(reader));
+			}
+
+			return bookings;
+		}
+
 		public Booking? GetById(int id)
 		{
 			const string sql = @"
@@ -172,6 +204,7 @@ namespace BusRejserLibrary.Repositories
 				reader.GetString("kundeNavn"),
 				reader.GetString("kundeEmail"),
 				reader.GetInt32("antalPladser"),
+				
 				(BusRejserLibrary.Enums.BookingStatus)reader.GetInt32("status"),
 				DateTime.SpecifyKind(reader.GetDateTime("createdAt"), DateTimeKind.Utc)
 			);
