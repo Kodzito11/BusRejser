@@ -1,8 +1,10 @@
 ﻿using System.Security.Claims;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Services;
+using BusRejserLibrary.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using BusRejser.DTOs;
 
 namespace BusRejser.Controllers
 {
@@ -11,27 +13,50 @@ namespace BusRejser.Controllers
 	public class BookingController : ControllerBase
 	{
 		private readonly BookingService _bookingService;
+		private readonly UserRepository _userRepository;
 
-		public BookingController(BookingService bookingService)
+		public BookingController(BookingService bookingService, UserRepository userRepository)
 		{
 			_bookingService = bookingService;
+			_userRepository = userRepository;
 		}
 
 		[HttpGet]
 		[Authorize(Roles = "Admin,Medarbejder")]
-		public ActionResult<IEnumerable<Booking>> GetAll()
+		public ActionResult<IEnumerable<BookingResponse>> GetAll()
 		{
 			try
 			{
 				var bookings = _bookingService.GetAll();
-				return Ok(bookings);
+
+				var result = bookings.Select(b =>
+				{
+					var user = b.UserId != null
+						? _userRepository.GetById(b.UserId.Value)
+						: null;
+
+					return new BookingResponse
+					{
+						BookingId = b.BookingId,
+						RejseId = b.RejseId,
+						UserId = b.UserId,
+						Role = user != null ? user.Role.ToString() : null,
+						KundeNavn = b.KundeNavn,
+						KundeEmail = b.KundeEmail,
+						AntalPladser = b.AntalPladser,
+						CreatedAt = b.CreatedAt,
+						Status = (int)b.Status,
+						BookingReference = b.BookingReference
+					};
+				});
+
+				return Ok(result);
 			}
 			catch (Exception ex)
 			{
 				return BadRequest(ex.Message);
 			}
 		}
-
 
 		[HttpPost]
 		[AllowAnonymous]
@@ -88,9 +113,39 @@ namespace BusRejser.Controllers
 
 		[HttpGet("rejse/{rejseId:int}")]
 		[Authorize(Roles = "Admin,Medarbejder")]
-		public ActionResult<List<Booking>> GetByRejseId(int rejseId)
+		public ActionResult<IEnumerable<BookingResponse>> GetByRejseId(int rejseId)
 		{
-			return _bookingService.GetByRejseId(rejseId);
+			try
+			{
+				var bookings = _bookingService.GetByRejseId(rejseId);
+
+				var result = bookings.Select(b =>
+				{
+					var user = b.UserId != null
+						? _userRepository.GetById(b.UserId.Value)
+						: null;
+
+					return new BookingResponse
+					{
+						BookingId = b.BookingId,
+						RejseId = b.RejseId,
+						UserId = b.UserId,
+						Role = user != null ? user.Role.ToString() : null,
+						KundeNavn = b.KundeNavn,
+						KundeEmail = b.KundeEmail,
+						AntalPladser = b.AntalPladser,
+						CreatedAt = b.CreatedAt,
+						Status = (int)b.Status,
+						BookingReference = b.BookingReference
+					};
+				});
+
+				return Ok(result);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(ex.Message);
+			}
 		}
 
 		[HttpGet("mine")]

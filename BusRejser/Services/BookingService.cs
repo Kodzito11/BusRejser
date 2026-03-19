@@ -1,6 +1,7 @@
 ﻿using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
 using BusRejserLibrary.Enums;
+using BusRejser.DTOs;
 
 namespace BusRejserLibrary.Services
 {
