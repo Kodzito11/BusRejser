@@ -8,7 +8,9 @@ namespace BusRejserLibrary.Enums
 {
 	public enum BookingStatus
 	{
-		Aktiv = 0,
-		Annulleret = 1
+		Pending = 0,
+		Paid = 1,
+		Cancelled = 2,
+		PaymentFailed = 3
 	}
 }

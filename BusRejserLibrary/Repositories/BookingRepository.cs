@@ -1,4 +1,5 @@
 ﻿using BusRejserLibrary.Database;
+using BusRejserLibrary.Enums;
 using BusRejserLibrary.Models;
 using MySqlConnector;
 
@@ -16,10 +17,10 @@ namespace BusRejserLibrary.Repositories
 		public int Create(Booking booking)
 		{
 			const string sql = @"
-				INSERT INTO booking 
-				(rejseId, userId, bookingReference, kundeNavn, kundeEmail, antalPladser, status, createdAt)
-				VALUES 
-				(@rejseId, @userId, @bookingReference, @kundeNavn, @kundeEmail, @antalPladser, @status, @createdAt);
+				INSERT INTO booking
+				(rejseId, userId, bookingReference, kundeNavn, kundeEmail, antalPladser, totalPrice, status, createdAt, paidAt, stripeSessionId, stripePaymentIntentId)
+				VALUES
+				(@rejseId, @userId, @bookingReference, @kundeNavn, @kundeEmail, @antalPladser, @totalPrice, @status, @createdAt, @paidAt, @stripeSessionId, @stripePaymentIntentId);
 				SELECT LAST_INSERT_ID();";
 
 			using var conn = _db.GetConnection();
@@ -32,8 +33,12 @@ namespace BusRejserLibrary.Repositories
 			cmd.Parameters.AddWithValue("@kundeNavn", booking.KundeNavn);
 			cmd.Parameters.AddWithValue("@kundeEmail", booking.KundeEmail);
 			cmd.Parameters.AddWithValue("@antalPladser", booking.AntalPladser);
+			cmd.Parameters.AddWithValue("@totalPrice", booking.TotalPrice);
 			cmd.Parameters.AddWithValue("@status", (int)booking.Status);
 			cmd.Parameters.AddWithValue("@createdAt", booking.CreatedAt);
+			cmd.Parameters.AddWithValue("@paidAt", (object?)booking.PaidAt ?? DBNull.Value);
+			cmd.Parameters.AddWithValue("@stripeSessionId", (object?)booking.StripeSessionId ?? DBNull.Value);
+			cmd.Parameters.AddWithValue("@stripePaymentIntentId", (object?)booking.StripePaymentIntentId ?? DBNull.Value);
 
 			var idObj = cmd.ExecuteScalar();
 			var newId = Convert.ToInt32(idObj);
@@ -59,8 +64,12 @@ namespace BusRejserLibrary.Repositories
 					kundeNavn,
 					kundeEmail,
 					antalPladser,
+					totalPrice,
 					status,
-					createdAt
+					createdAt,
+					paidAt,
+					stripeSessionId,
+					stripePaymentIntentId
 				FROM booking
 				ORDER BY bookingId DESC";
 
@@ -77,7 +86,20 @@ namespace BusRejserLibrary.Repositories
 		public Booking? GetById(int id)
 		{
 			const string sql = @"
-				SELECT bookingId, rejseId, userId, bookingReference, kundeNavn, kundeEmail, antalPladser, status, createdAt
+				SELECT 
+					bookingId,
+					rejseId,
+					userId,
+					bookingReference,
+					kundeNavn,
+					kundeEmail,
+					antalPladser,
+					totalPrice,
+					status,
+					createdAt,
+					paidAt,
+					stripeSessionId,
+					stripePaymentIntentId
 				FROM booking
 				WHERE bookingId = @id
 				LIMIT 1;";
@@ -94,10 +116,56 @@ namespace BusRejserLibrary.Repositories
 			return Map(reader);
 		}
 
+		public Booking? GetByStripeSessionId(string stripeSessionId)
+		{
+			const string sql = @"
+				SELECT
+					bookingId,
+					rejseId,
+					userId,
+					bookingReference,
+					kundeNavn,
+					kundeEmail,
+					antalPladser,
+					totalPrice,
+					status,
+					createdAt,
+					paidAt,
+					stripeSessionId,
+					stripePaymentIntentId
+				FROM booking
+				WHERE stripeSessionId = @stripeSessionId
+				LIMIT 1;";
+
+			using var conn = _db.GetConnection();
+			conn.Open();
+
+			using var cmd = new MySqlCommand(sql, conn);
+			cmd.Parameters.AddWithValue("@stripeSessionId", stripeSessionId);
+
+			using var reader = cmd.ExecuteReader();
+			if (!reader.Read()) return null;
+
+			return Map(reader);
+		}
+
 		public List<Booking> GetByRejseId(int rejseId)
 		{
 			const string sql = @"
-				SELECT bookingId, rejseId, userId, bookingReference, kundeNavn, kundeEmail, antalPladser, status, createdAt
+				SELECT 
+					bookingId,
+					rejseId,
+					userId,
+					bookingReference,
+					kundeNavn,
+					kundeEmail,
+					antalPladser,
+					totalPrice,
+					status,
+					createdAt,
+					paidAt,
+					stripeSessionId,
+					stripePaymentIntentId
 				FROM booking
 				WHERE rejseId = @rejseId
 				ORDER BY createdAt DESC;";
@@ -123,13 +191,14 @@ namespace BusRejserLibrary.Repositories
 				SELECT COALESCE(SUM(antalPladser), 0)
 				FROM booking
 				WHERE rejseId = @rejseId
-				  AND status = 0;";
+				  AND status = @status;";
 
 			using var conn = _db.GetConnection();
 			conn.Open();
 
 			using var cmd = new MySqlCommand(sql, conn);
 			cmd.Parameters.AddWithValue("@rejseId", rejseId);
+			cmd.Parameters.AddWithValue("@status", (int)BookingStatus.Paid);
 
 			var result = cmd.ExecuteScalar();
 			return Convert.ToInt32(result);
@@ -138,7 +207,20 @@ namespace BusRejserLibrary.Repositories
 		public List<Booking> GetByUserId(int userId)
 		{
 			const string sql = @"
-				SELECT bookingId, rejseId, userId, bookingReference, kundeNavn, kundeEmail, antalPladser, status, createdAt
+				SELECT 
+					bookingId,
+					rejseId,
+					userId,
+					bookingReference,
+					kundeNavn,
+					kundeEmail,
+					antalPladser,
+					totalPrice,
+					status,
+					createdAt,
+					paidAt,
+					stripeSessionId,
+					stripePaymentIntentId
 				FROM booking
 				WHERE userId = @userId
 				ORDER BY createdAt DESC;";
@@ -162,14 +244,16 @@ namespace BusRejserLibrary.Repositories
 		{
 			const string sql = @"
 				UPDATE booking
-				SET status = 1
-				WHERE bookingId = @id AND status = 0;";
+				SET status = @cancelledStatus
+				WHERE bookingId = @id AND status = @paidStatus;";
 
 			using var conn = _db.GetConnection();
 			conn.Open();
 
 			using var cmd = new MySqlCommand(sql, conn);
 			cmd.Parameters.AddWithValue("@id", id);
+			cmd.Parameters.AddWithValue("@cancelledStatus", (int)BookingStatus.Cancelled);
+			cmd.Parameters.AddWithValue("@paidStatus", (int)BookingStatus.Paid);
 
 			return cmd.ExecuteNonQuery() > 0;
 		}
@@ -178,14 +262,16 @@ namespace BusRejserLibrary.Repositories
 		{
 			const string sql = @"
 				UPDATE booking
-				SET status = 0
-				WHERE bookingId = @id AND status = 1;";
+				SET status = @paidStatus
+				WHERE bookingId = @id AND status = @cancelledStatus;";
 
 			using var conn = _db.GetConnection();
 			conn.Open();
 
 			using var cmd = new MySqlCommand(sql, conn);
 			cmd.Parameters.AddWithValue("@id", id);
+			cmd.Parameters.AddWithValue("@paidStatus", (int)BookingStatus.Paid);
+			cmd.Parameters.AddWithValue("@cancelledStatus", (int)BookingStatus.Cancelled);
 
 			return cmd.ExecuteNonQuery() > 0;
 		}
@@ -196,6 +282,18 @@ namespace BusRejserLibrary.Repositories
 				? null
 				: reader.GetInt32("userId");
 
+			DateTime? paidAt = reader.IsDBNull(reader.GetOrdinal("paidAt"))
+				? null
+				: DateTime.SpecifyKind(reader.GetDateTime("paidAt"), DateTimeKind.Utc);
+
+			string? stripeSessionId = reader.IsDBNull(reader.GetOrdinal("stripeSessionId"))
+				? null
+				: reader.GetString("stripeSessionId");
+
+			string? stripePaymentIntentId = reader.IsDBNull(reader.GetOrdinal("stripePaymentIntentId"))
+				? null
+				: reader.GetString("stripePaymentIntentId");
+
 			return Booking.Restore(
 				reader.GetInt32("bookingId"),
 				reader.GetInt32("rejseId"),
@@ -204,9 +302,12 @@ namespace BusRejserLibrary.Repositories
 				reader.GetString("kundeNavn"),
 				reader.GetString("kundeEmail"),
 				reader.GetInt32("antalPladser"),
-				
-				(BusRejserLibrary.Enums.BookingStatus)reader.GetInt32("status"),
-				DateTime.SpecifyKind(reader.GetDateTime("createdAt"), DateTimeKind.Utc)
+				reader.GetDecimal("totalPrice"),
+				(BookingStatus)reader.GetInt32("status"),
+				DateTime.SpecifyKind(reader.GetDateTime("createdAt"), DateTimeKind.Utc),
+				paidAt,
+				stripeSessionId,
+				stripePaymentIntentId
 			);
 		}
 	}

@@ -20,5 +20,8 @@ namespace BusRejser.DTOs
 		public int Status { get; set; }
 
 		public string BookingReference { get; set; } = "";
+
+		public decimal TotalPrice { get; set; }
+		public DateTime? PaidAt { get; set; }
 	}
 }

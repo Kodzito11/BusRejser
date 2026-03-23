@@ -1,7 +1,6 @@
 ﻿using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
 using BusRejserLibrary.Enums;
-using BusRejser.DTOs;
 
 namespace BusRejserLibrary.Services
 {
@@ -21,6 +20,10 @@ namespace BusRejserLibrary.Services
 			var rejse = _rejseRepository.GetById(booking.RejseId);
 			if (rejse == null)
 				throw new Exception("Rejse findes ikke.");
+
+			// Stripe-flow: booking bør være betalt før den gemmes
+			if (booking.Status != BookingStatus.Paid)
+				throw new Exception("Kun betalte bookinger kan oprettes.");
 
 			var reserved = _rejseRepository.TryReserveSeats(booking.RejseId, booking.AntalPladser);
 			if (!reserved)
@@ -63,8 +66,11 @@ namespace BusRejserLibrary.Services
 			if (booking == null)
 				return false;
 
-			if (booking.Status == BookingStatus.Annulleret)
+			if (booking.Status == BookingStatus.Cancelled)
 				return true;
+
+			if (booking.Status != BookingStatus.Paid)
+				throw new Exception("Kun betalte bookinger kan annulleres.");
 
 			var cancelled = _bookingRepository.Cancel(bookingId);
 			if (!cancelled)
@@ -79,8 +85,11 @@ namespace BusRejserLibrary.Services
 			if (booking == null)
 				return false;
 
-			if (booking.Status == BookingStatus.Annulleret)
+			if (booking.Status == BookingStatus.Cancelled)
 				return true;
+
+			if (booking.Status != BookingStatus.Paid)
+				throw new Exception("Kun betalte bookinger kan annulleres.");
 
 			if (!isStaff)
 			{
@@ -111,8 +120,11 @@ namespace BusRejserLibrary.Services
 			if (booking == null)
 				return false;
 
-			if (booking.Status == BookingStatus.Aktiv)
+			if (booking.Status == BookingStatus.Paid)
 				return true;
+
+			if (booking.Status != BookingStatus.Cancelled)
+				throw new Exception("Kun annullerede bookinger kan genaktiveres.");
 
 			var reserved = _rejseRepository.TryReserveSeats(booking.RejseId, booking.AntalPladser);
 			if (!reserved)

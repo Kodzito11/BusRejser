@@ -1,10 +1,10 @@
 ﻿using System.Security.Claims;
+using BusRejser.DTOs;
 using BusRejserLibrary.Models;
-using BusRejserLibrary.Services;
 using BusRejserLibrary.Repositories;
+using BusRejserLibrary.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using BusRejser.DTOs;
 
 namespace BusRejser.Controllers
 {
@@ -29,86 +29,24 @@ namespace BusRejser.Controllers
 			{
 				var bookings = _bookingService.GetAll();
 
-				var result = bookings.Select(b =>
-				{
-					var user = b.UserId != null
-						? _userRepository.GetById(b.UserId.Value)
-						: null;
-
-					return new BookingResponse
-					{
-						BookingId = b.BookingId,
-						RejseId = b.RejseId,
-						UserId = b.UserId,
-						Role = user != null ? user.Role.ToString() : null,
-						KundeNavn = b.KundeNavn,
-						KundeEmail = b.KundeEmail,
-						AntalPladser = b.AntalPladser,
-						CreatedAt = b.CreatedAt,
-						Status = (int)b.Status,
-						BookingReference = b.BookingReference
-					};
-				});
+				var result = bookings.Select(MapToResponse);
 
 				return Ok(result);
 			}
 			catch (Exception ex)
 			{
-				return BadRequest(ex.Message);
+				return BadRequest(new { Message = ex.Message });
 			}
 		}
 
 		[HttpPost]
 		[AllowAnonymous]
-		public ActionResult Create([FromBody] BookingCreateRequest request)
+		public ActionResult Create()
 		{
-			try
+			return BadRequest(new
 			{
-				var isAuthenticated = User.Identity?.IsAuthenticated == true;
-
-				int? userId = null;
-				string kundeNavn;
-				string kundeEmail;
-
-				if (isAuthenticated)
-				{
-					var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-					if (!int.TryParse(userIdRaw, out var parsedUserId))
-						return Unauthorized(new { Message = "Ugyldig bruger." });
-
-					userId = parsedUserId;
-					kundeNavn = User.FindFirst(ClaimTypes.Name)?.Value ?? "";
-					kundeEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "";
-
-					if (string.IsNullOrWhiteSpace(kundeNavn) || string.IsNullOrWhiteSpace(kundeEmail))
-						return BadRequest(new { Message = "Brugeroplysninger mangler i token." });
-				}
-				else
-				{
-					kundeNavn = request.KundeNavn;
-					kundeEmail = request.KundeEmail;
-				}
-
-				var booking = Booking.Create(
-					request.RejseId,
-					userId,
-					kundeNavn,
-					kundeEmail,
-					request.AntalPladser
-				);
-
-				var id = _bookingService.Create(booking);
-
-				return Ok(new
-				{
-					bookingId = id,
-					bookingReference = booking.BookingReference
-				});
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(new { Message = ex.Message });
-			}
+				Message = "Direkte booking er ikke længere aktiv. Brug Stripe checkout flow."
+			});
 		}
 
 		[HttpGet("rejse/{rejseId:int}")]
@@ -119,45 +57,36 @@ namespace BusRejser.Controllers
 			{
 				var bookings = _bookingService.GetByRejseId(rejseId);
 
-				var result = bookings.Select(b =>
-				{
-					var user = b.UserId != null
-						? _userRepository.GetById(b.UserId.Value)
-						: null;
-
-					return new BookingResponse
-					{
-						BookingId = b.BookingId,
-						RejseId = b.RejseId,
-						UserId = b.UserId,
-						Role = user != null ? user.Role.ToString() : null,
-						KundeNavn = b.KundeNavn,
-						KundeEmail = b.KundeEmail,
-						AntalPladser = b.AntalPladser,
-						CreatedAt = b.CreatedAt,
-						Status = (int)b.Status,
-						BookingReference = b.BookingReference
-					};
-				});
+				var result = bookings.Select(MapToResponse);
 
 				return Ok(result);
 			}
 			catch (Exception ex)
 			{
-				return BadRequest(ex.Message);
+				return BadRequest(new { Message = ex.Message });
 			}
 		}
 
 		[HttpGet("mine")]
-		[Authorize (Roles = "Kunde")]
-		public ActionResult<List<Booking>> GetMine()
+		[Authorize(Roles = "Kunde")]
+		public ActionResult<IEnumerable<BookingResponse>> GetMine()
 		{
-			var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			try
+			{
+				var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-			if (!int.TryParse(userIdRaw, out var userId))
-				return Unauthorized(new { Message = "Ugyldig bruger." });
+				if (!int.TryParse(userIdRaw, out var userId))
+					return Unauthorized(new { Message = "Ugyldig bruger." });
 
-			return _bookingService.GetByUserId(userId);
+				var bookings = _bookingService.GetByUserId(userId);
+				var result = bookings.Select(MapToResponse);
+
+				return Ok(result);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { Message = ex.Message });
+			}
 		}
 
 		[HttpGet("rejse/{rejseId:int}/available-seats")]
@@ -216,13 +145,30 @@ namespace BusRejser.Controllers
 				return BadRequest(new { Message = ex.Message });
 			}
 		}
-	}
 
-	public class BookingCreateRequest
-	{
-		public int RejseId { get; set; }
-		public string KundeNavn { get; set; } = "";
-		public string KundeEmail { get; set; } = "";
-		public int AntalPladser { get; set; }
+		private BookingResponse MapToResponse(Booking b)
+		{
+			var user = b.UserId != null
+				? _userRepository.GetById(b.UserId.Value)
+				: null;
+
+			return new BookingResponse
+			{
+				BookingId = b.BookingId,
+				RejseId = b.RejseId,
+				UserId = b.UserId,
+				Role = user != null ? user.Role.ToString() : null,
+				KundeNavn = b.KundeNavn,
+				KundeEmail = b.KundeEmail,
+				AntalPladser = b.AntalPladser,
+				CreatedAt = b.CreatedAt,
+				Status = (int)b.Status,
+				BookingReference = b.BookingReference,
+
+				// tilføj kun hvis de findes i din DTO:
+				//TotalPrice = b.TotalPrice,
+				//PaidAt = b.PaidAt
+			};
+		}
 	}
 }

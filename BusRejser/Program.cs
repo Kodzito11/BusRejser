@@ -81,6 +81,10 @@ builder.Services.AddScoped<BusFacilitetRepository>();
 builder.Services.AddScoped<RejseRepository>();
 builder.Services.AddScoped<BookingRepository>();
 
+var stripeSecret = builder.Configuration["Stripe:SecretKey"];
+if (string.IsNullOrWhiteSpace(stripeSecret))
+	throw new Exception("Stripe:SecretKey mangler i appsettings.json.");
+
 // Services
 builder.Services.AddScoped<BusService>();
 builder.Services.AddScoped<FacilitetService>();
@@ -89,6 +93,7 @@ builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped(_ => new JwtService(jwtSecret));
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<BookingService>();
+builder.Services.AddScoped<StripeService>();
 
 var app = builder.Build();
 
