@@ -1,19 +1,24 @@
 ﻿using BusRejser.DTOs;
 using BusRejserLibrary.Repositories;
+using BusRejserLibrary.Services;
 using Stripe;
 using Stripe.Checkout;
-using System.Security.Claims;
 
 namespace BusRejser.Services
 {
 	public class StripeService
 	{
 		private readonly RejseRepository _rejseRepository;
+		private readonly BookingService _bookingService;
 		private readonly IConfiguration _configuration;
 
-		public StripeService(RejseRepository rejseRepository, IConfiguration configuration)
+		public StripeService(
+			RejseRepository rejseRepository,
+			BookingService bookingService,
+			IConfiguration configuration)
 		{
 			_rejseRepository = rejseRepository;
+			_bookingService = bookingService;
 			_configuration = configuration;
 
 			var secretKey = _configuration["Stripe:SecretKey"];
@@ -41,8 +46,6 @@ namespace BusRejser.Services
 
 			if (rejse.Price < 0)
 				throw new Exception("Ugyldig pris på rejse.");
-
-			var totalPrice = rejse.Price * request.AntalPladser;
 
 			var options = new SessionCreateOptions
 			{
@@ -77,10 +80,83 @@ namespace BusRejser.Services
 				}
 			};
 
-			var service = new SessionService();
-			var session = service.Create(options);
+			var sessionService = new SessionService();
+			var session = sessionService.Create(options);
+
+			if (string.IsNullOrWhiteSpace(session.Url))
+				throw new Exception("Stripe returnerede ikke en checkout-url.");
 
 			return session.Url;
+		}
+
+		public void HandleWebhook(string json, string stripeSignature)
+		{
+			var webhookSecret = _configuration["Stripe:WebhookSecret"];
+			if (string.IsNullOrWhiteSpace(webhookSecret))
+				throw new Exception("Stripe webhook secret mangler.");
+
+			var stripeEvent = EventUtility.ConstructEvent(
+				json,
+				stripeSignature,
+				webhookSecret
+			);
+
+			if (stripeEvent.Type != EventTypes.CheckoutSessionCompleted)
+				return;
+
+			var session = stripeEvent.Data.Object as Session;
+			if (session == null)
+				throw new Exception("Stripe session mangler.");
+
+			HandleCheckoutSessionCompleted(session);
+		}
+
+		private void HandleCheckoutSessionCompleted(Session session)
+		{
+			var request = BuildWebhookBookingRequest(session);
+			_bookingService.CreateFromStripe(request);
+		}
+
+		private StripeWebhookBookingRequest BuildWebhookBookingRequest(Session session)
+		{
+			if (string.IsNullOrWhiteSpace(session.Id))
+				throw new Exception("Stripe session id mangler.");
+
+			var metadata = session.Metadata;
+			if (metadata == null)
+				throw new Exception("Stripe metadata mangler.");
+
+			if (!metadata.TryGetValue("rejseId", out var rejseIdRaw) || !int.TryParse(rejseIdRaw, out var rejseId))
+				throw new Exception("Ugyldig rejseId.");
+
+			if (!metadata.TryGetValue("antalPladser", out var antalPladserRaw) || !int.TryParse(antalPladserRaw, out var antalPladser))
+				throw new Exception("Ugyldig antalPladser.");
+
+			if (!metadata.TryGetValue("kundeNavn", out var kundeNavn) || string.IsNullOrWhiteSpace(kundeNavn))
+				throw new Exception("Manglende kundeNavn.");
+
+			if (!metadata.TryGetValue("kundeEmail", out var kundeEmail) || string.IsNullOrWhiteSpace(kundeEmail))
+				throw new Exception("Manglende kundeEmail.");
+
+			int? userId = null;
+			if (metadata.TryGetValue("userId", out var userIdRaw) &&
+				!string.IsNullOrWhiteSpace(userIdRaw) &&
+				int.TryParse(userIdRaw, out var parsedUserId))
+			{
+				userId = parsedUserId;
+			}
+
+			return new StripeWebhookBookingRequest
+			{
+				RejseId = rejseId,
+				AntalPladser = antalPladser,
+				KundeNavn = kundeNavn,
+				KundeEmail = kundeEmail,
+				UserId = userId,
+				StripeSessionId = session.Id,
+				StripePaymentIntentId = session.PaymentIntentId,
+				TotalPrice = (session.AmountTotal ?? 0) / 100m
+			};
 		}
 	}
 }

@@ -1,11 +1,8 @@
 ﻿using System.Security.Claims;
 using BusRejser.DTOs;
-using BusRejserLibrary.Models;
-using BusRejserLibrary.Repositories;
 using BusRejserLibrary.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using BusRejser.Mappers;
 
 namespace BusRejser.Controllers
 {
@@ -14,13 +11,10 @@ namespace BusRejser.Controllers
 	public class BookingController : ControllerBase
 	{
 		private readonly BookingService _bookingService;
-		private readonly UserRepository _userRepository;
 
-
-		public BookingController(BookingService bookingService, UserRepository userRepository)
+		public BookingController(BookingService bookingService)
 		{
 			_bookingService = bookingService;
-			_userRepository = userRepository;
 		}
 
 		[HttpGet]
@@ -29,20 +23,11 @@ namespace BusRejser.Controllers
 		{
 			try
 			{
-				var bookings = _bookingService.GetAll();
-
-				var result = bookings.Select(b =>
-				{
-					var role = _bookingService.GetUserRole(b.UserId);
-
-					return BookingMapper.ToResponse(b, role);
-				});
-
-				return Ok(result);
+				return Ok(_bookingService.GetAllResponses());
 			}
 			catch (Exception ex)
 			{
-				return BadRequest(new { Message = ex.Message });
+				return BadRequest(Error(ex.Message));
 			}
 		}
 
@@ -50,10 +35,7 @@ namespace BusRejser.Controllers
 		[AllowAnonymous]
 		public ActionResult Create()
 		{
-			return BadRequest(new
-			{
-				Message = "Direkte booking er ikke længere aktiv. Brug Stripe checkout flow."
-			});
+			return BadRequest(Error("Direkte booking er ikke længere aktiv. Brug Stripe checkout flow."));
 		}
 
 		[HttpGet("rejse/{rejseId:int}")]
@@ -62,24 +44,11 @@ namespace BusRejser.Controllers
 		{
 			try
 			{
-				var bookings = _bookingService.GetByRejseId(rejseId); 
-
-				var result = bookings.Select(b =>
-				{
-					var user = b.UserId != null
-						? _userRepository.GetById(b.UserId.Value)
-						: null;
-
-					var role = user?.Role.ToString();
-
-					return BookingMapper.ToResponse(b, role);
-				});
-
-				return Ok(result);
+				return Ok(_bookingService.GetByRejseIdResponses(rejseId));
 			}
 			catch (Exception ex)
 			{
-				return BadRequest(new { Message = ex.Message });
+				return BadRequest(Error(ex.Message));
 			}
 		}
 
@@ -92,26 +61,13 @@ namespace BusRejser.Controllers
 				var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
 				if (!int.TryParse(userIdRaw, out var userId))
-					return Unauthorized(new { Message = "Ugyldig bruger." });
+					return Unauthorized(Error("Ugyldig bruger."));
 
-				var bookings = _bookingService.GetByUserId(userId);
-
-				var result = bookings.Select(b =>
-				{
-					var user = b.UserId != null
-						? _userRepository.GetById(b.UserId.Value)
-						: null;
-
-					var role = user?.Role.ToString();
-
-					return BookingMapper.ToResponse(b, role);
-				});
-
-				return Ok(result);
+				return Ok(_bookingService.GetByUserIdResponses(userId));
 			}
 			catch (Exception ex)
 			{
-				return BadRequest(new { Message = ex.Message });
+				return BadRequest(Error(ex.Message));
 			}
 		}
 
@@ -125,7 +81,7 @@ namespace BusRejser.Controllers
 			}
 			catch (Exception ex)
 			{
-				return NotFound(new { Message = ex.Message });
+				return NotFound(Error(ex.Message));
 			}
 		}
 
@@ -143,17 +99,17 @@ namespace BusRejser.Controllers
 				{
 					var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 					if (!int.TryParse(userIdRaw, out var parsedUserId))
-						return Unauthorized(new { Message = "Ugyldig bruger." });
+						return Unauthorized(Error("Ugyldig bruger."));
 
 					userId = parsedUserId;
 				}
 
 				var ok = _bookingService.Cancel(id, userId, isStaff);
-				return ok ? Ok() : NotFound();
+				return ok ? Ok() : NotFound(Error("Booking blev ikke fundet."));
 			}
 			catch (Exception ex)
 			{
-				return BadRequest(new { Message = ex.Message });
+				return BadRequest(Error(ex.Message));
 			}
 		}
 
@@ -164,12 +120,17 @@ namespace BusRejser.Controllers
 			try
 			{
 				var ok = _bookingService.Reactivate(id);
-				return ok ? Ok() : NotFound();
+				return ok ? Ok() : NotFound(Error("Booking blev ikke fundet."));
 			}
 			catch (Exception ex)
 			{
-				return BadRequest(new { Message = ex.Message });
+				return BadRequest(Error(ex.Message));
 			}
+		}
+
+		private static ErrorResponse Error(string message)
+		{
+			return new ErrorResponse { Message = message };
 		}
 	}
 }
