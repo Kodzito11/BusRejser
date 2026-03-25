@@ -109,48 +109,42 @@ namespace BusRejser.Controllers
 			if (string.IsNullOrWhiteSpace(session.Id))
 				throw new Exception("Stripe session id mangler.");
 
-			var existingBooking = _bookingRepository.GetByStripeSessionId(session.Id);
-			if (existingBooking != null)
-				return Task.CompletedTask;
-
 			var metadata = session.Metadata;
 			if (metadata == null)
 				throw new Exception("Stripe metadata mangler.");
 
 			if (!metadata.TryGetValue("rejseId", out var rejseIdRaw) || !int.TryParse(rejseIdRaw, out var rejseId))
-				throw new Exception("Ugyldig eller manglende rejseId i metadata.");
+				throw new Exception("Ugyldig rejseId.");
 
 			if (!metadata.TryGetValue("antalPladser", out var antalPladserRaw) || !int.TryParse(antalPladserRaw, out var antalPladser))
-				throw new Exception("Ugyldig eller manglende antalPladser i metadata.");
+				throw new Exception("Ugyldig antalPladser.");
 
-			if (!metadata.TryGetValue("kundeNavn", out var kundeNavn) || string.IsNullOrWhiteSpace(kundeNavn))
-				throw new Exception("Manglende kundeNavn i metadata.");
+			if (!metadata.TryGetValue("kundeNavn", out var kundeNavn))
+				throw new Exception("Manglende kundeNavn.");
 
-			if (!metadata.TryGetValue("kundeEmail", out var kundeEmail) || string.IsNullOrWhiteSpace(kundeEmail))
-				throw new Exception("Manglende kundeEmail i metadata.");
+			if (!metadata.TryGetValue("kundeEmail", out var kundeEmail))
+				throw new Exception("Manglende kundeEmail.");
 
 			int? userId = null;
 			if (metadata.TryGetValue("userId", out var userIdRaw) &&
-				!string.IsNullOrWhiteSpace(userIdRaw) &&
 				int.TryParse(userIdRaw, out var parsedUserId))
 			{
 				userId = parsedUserId;
 			}
 
-			var totalPrice = (session.AmountTotal ?? 0) / 100m;
+			var request = new StripeWebhookBookingRequest
+			{
+				RejseId = rejseId,
+				AntalPladser = antalPladser,
+				KundeNavn = kundeNavn,
+				KundeEmail = kundeEmail,
+				UserId = userId,
+				StripeSessionId = session.Id,
+				StripePaymentIntentId = session.PaymentIntentId,
+				TotalPrice = (session.AmountTotal ?? 0) / 100m
+			};
 
-			var booking = Booking.Create(
-				rejseId,
-				userId,
-				kundeNavn,
-				kundeEmail,
-				antalPladser,
-				totalPrice
-			);
-
-			booking.MarkAsPaid(session.Id, session.PaymentIntentId);
-
-			_bookingService.Create(booking);
+			_bookingService.CreateFromStripe(request);
 
 			return Task.CompletedTask;
 		}

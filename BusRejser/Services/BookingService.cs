@@ -1,6 +1,7 @@
-﻿using BusRejserLibrary.Models;
-using BusRejserLibrary.Repositories;
+﻿using BusRejser.DTOs;
 using BusRejserLibrary.Enums;
+using BusRejserLibrary.Models;
+using BusRejserLibrary.Repositories;
 
 namespace BusRejserLibrary.Services
 {
@@ -8,11 +9,16 @@ namespace BusRejserLibrary.Services
 	{
 		private readonly BookingRepository _bookingRepository;
 		private readonly RejseRepository _rejseRepository;
+		private readonly UserRepository _userRepository;
 
-		public BookingService(BookingRepository bookingRepository, RejseRepository rejseRepository)
+		public BookingService(
+			BookingRepository bookingRepository, 
+			RejseRepository rejseRepository,
+			UserRepository userRepository)
 		{
 			_bookingRepository = bookingRepository;
 			_rejseRepository = rejseRepository;
+			_userRepository = userRepository;
 		}
 
 		public int Create(Booking booking)
@@ -21,7 +27,6 @@ namespace BusRejserLibrary.Services
 			if (rejse == null)
 				throw new Exception("Rejse findes ikke.");
 
-			// Stripe-flow: booking bør være betalt før den gemmes
 			if (booking.Status != BookingStatus.Paid)
 				throw new Exception("Kun betalte bookinger kan oprettes.");
 
@@ -139,6 +144,35 @@ namespace BusRejserLibrary.Services
 				_rejseRepository.ReleaseSeats(booking.RejseId, booking.AntalPladser);
 				throw;
 			}
+		}
+		public string? GetUserRole(int? userId)
+		{
+			if (userId == null)
+				return null;
+
+			var user = _userRepository.GetById(userId.Value);
+			return user?.Role.ToString();
+		}
+
+		public void CreateFromStripe(StripeWebhookBookingRequest request)
+		{
+
+			var existing = _bookingRepository.GetByStripeSessionId(request.StripeSessionId);
+			if (existing != null)
+				return;
+
+			var booking = Booking.Create(
+				request.RejseId,
+				request.UserId,
+				request.KundeNavn,
+				request.KundeEmail,
+				request.AntalPladser,
+				request.TotalPrice
+			);
+
+			booking.MarkAsPaid(request.StripeSessionId, request.StripePaymentIntentId);
+
+			Create(booking);
 		}
 	}
 }

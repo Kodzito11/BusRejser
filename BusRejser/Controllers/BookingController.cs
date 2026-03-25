@@ -5,6 +5,7 @@ using BusRejserLibrary.Repositories;
 using BusRejserLibrary.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using BusRejser.Mappers;
 
 namespace BusRejser.Controllers
 {
@@ -14,6 +15,7 @@ namespace BusRejser.Controllers
 	{
 		private readonly BookingService _bookingService;
 		private readonly UserRepository _userRepository;
+
 
 		public BookingController(BookingService bookingService, UserRepository userRepository)
 		{
@@ -29,7 +31,12 @@ namespace BusRejser.Controllers
 			{
 				var bookings = _bookingService.GetAll();
 
-				var result = bookings.Select(MapToResponse);
+				var result = bookings.Select(b =>
+				{
+					var role = _bookingService.GetUserRole(b.UserId);
+
+					return BookingMapper.ToResponse(b, role);
+				});
 
 				return Ok(result);
 			}
@@ -55,9 +62,18 @@ namespace BusRejser.Controllers
 		{
 			try
 			{
-				var bookings = _bookingService.GetByRejseId(rejseId);
+				var bookings = _bookingService.GetByRejseId(rejseId); 
 
-				var result = bookings.Select(MapToResponse);
+				var result = bookings.Select(b =>
+				{
+					var user = b.UserId != null
+						? _userRepository.GetById(b.UserId.Value)
+						: null;
+
+					var role = user?.Role.ToString();
+
+					return BookingMapper.ToResponse(b, role);
+				});
 
 				return Ok(result);
 			}
@@ -79,7 +95,17 @@ namespace BusRejser.Controllers
 					return Unauthorized(new { Message = "Ugyldig bruger." });
 
 				var bookings = _bookingService.GetByUserId(userId);
-				var result = bookings.Select(MapToResponse);
+
+				var result = bookings.Select(b =>
+				{
+					var user = b.UserId != null
+						? _userRepository.GetById(b.UserId.Value)
+						: null;
+
+					var role = user?.Role.ToString();
+
+					return BookingMapper.ToResponse(b, role);
+				});
 
 				return Ok(result);
 			}
@@ -144,31 +170,6 @@ namespace BusRejser.Controllers
 			{
 				return BadRequest(new { Message = ex.Message });
 			}
-		}
-
-		private BookingResponse MapToResponse(Booking b)
-		{
-			var user = b.UserId != null
-				? _userRepository.GetById(b.UserId.Value)
-				: null;
-
-			return new BookingResponse
-			{
-				BookingId = b.BookingId,
-				RejseId = b.RejseId,
-				UserId = b.UserId,
-				Role = user != null ? user.Role.ToString() : null,
-				KundeNavn = b.KundeNavn,
-				KundeEmail = b.KundeEmail,
-				AntalPladser = b.AntalPladser,
-				CreatedAt = b.CreatedAt,
-				Status = (int)b.Status,
-				BookingReference = b.BookingReference,
-
-				// tilføj kun hvis de findes i din DTO:
-				//TotalPrice = b.TotalPrice,
-				//PaidAt = b.PaidAt
-			};
 		}
 	}
 }

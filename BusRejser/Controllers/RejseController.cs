@@ -1,5 +1,7 @@
 ﻿using BusRejserLibrary.Models;
 using BusRejserLibrary.Services;
+using BusRejser.DTOs;
+using BusRejser.Mappers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -22,7 +24,11 @@ namespace BusRejser.Controllers
 		[AllowAnonymous]
 		public ActionResult<List<Rejse>> GetAll()
 		{
-			return _service.GetAll();
+			var rejser = _service.GetAll();
+
+			var result = rejser.Select(RejseMapper.ToResponse);
+
+			return Ok(result);
 		}
 
 		[HttpGet("{id:int}")]
@@ -31,7 +37,7 @@ namespace BusRejser.Controllers
 		{
 			var r = _service.GetById(id);
 			if (r == null) return NotFound();
-			return r;
+			return Ok(RejseMapper.ToResponse(r));
 		}
 
 		[HttpPost]
@@ -77,16 +83,5 @@ namespace BusRejser.Controllers
 			var ok = _service.Update(id, rejse);
 			return ok ? Ok() : NotFound();
 		}
-	}
-
-	public class RejseCreateRequest
-	{
-		public string Title { get; set; }
-		public string Destination { get; set; }
-		public DateTime StartAt { get; set; }
-		public DateTime EndAt { get; set; }
-		public decimal Price { get; set; }
-		public int MaxSeats { get; set; }
-		public int? BusId { get; set; }
 	}
 }
