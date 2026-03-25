@@ -6,7 +6,7 @@ using MySqlConnector;
 
 namespace BusRejserLibrary.Repositories
 {
-	public class RejseRepository
+	public class RejseRepository : IRejseRepository
 	{
 		private readonly DBConnection _db;
 

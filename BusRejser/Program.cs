@@ -90,6 +90,9 @@ builder.Services.AddScoped<FacilitetRepository>();
 builder.Services.AddScoped<BusFacilitetRepository>();
 builder.Services.AddScoped<RejseRepository>();
 builder.Services.AddScoped<BookingRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IRejseRepository, RejseRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var stripeSecret = builder.Configuration["Stripe:SecretKey"];
 if (string.IsNullOrWhiteSpace(stripeSecret))

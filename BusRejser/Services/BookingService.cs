@@ -9,15 +9,15 @@ namespace BusRejserLibrary.Services
 {
 	public class BookingService
 	{
-		private readonly BookingRepository _bookingRepository;
-		private readonly RejseRepository _rejseRepository;
-		private readonly UserRepository _userRepository;
+		private readonly IBookingRepository _bookingRepository;
+		private readonly IRejseRepository _rejseRepository;
+		private readonly IUserRepository _userRepository;
 		private readonly ILogger<BookingService> _logger;
 
 		public BookingService(
-			BookingRepository bookingRepository,
-			RejseRepository rejseRepository,
-			UserRepository userRepository,
+			IBookingRepository bookingRepository,
+			IRejseRepository rejseRepository,
+			IUserRepository userRepository,
 			ILogger<BookingService> logger)
 		{
 			_bookingRepository = bookingRepository;

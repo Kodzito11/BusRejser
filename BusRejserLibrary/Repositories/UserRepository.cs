@@ -5,7 +5,7 @@ using BusRejserLibrary.Models;
 
 namespace BusRejserLibrary.Repositories
 {
-	public class UserRepository
+	public class UserRepository : IUserRepository
 	{
 		private readonly string _connectionString;
 
