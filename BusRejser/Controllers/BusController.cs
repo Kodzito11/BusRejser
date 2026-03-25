@@ -1,10 +1,9 @@
-﻿using BusRejserLibrary.Models;
+﻿using BusRejser.DTOs;
+using BusRejser.Mappers;
+using BusRejserLibrary.Models;
 using BusRejserLibrary.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
 
 namespace BusRejser.Controllers
 {
@@ -20,17 +19,20 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpGet]
-		public ActionResult<List<Bus>> GetAll()
+		public ActionResult<IEnumerable<BusResponse>> GetAll()
 		{
-			return _busService.GetAll();
+			var buses = _busService.GetAll();
+			return Ok(buses.Select(BusMapper.ToResponse));
 		}
 
 		[HttpGet("{id:int}")]
-		public ActionResult<Bus> GetById(int id)
+		public ActionResult<BusResponse> GetById(int id)
 		{
 			var bus = _busService.GetById(id);
-			if (bus == null) return NotFound();
-			return bus;
+			if (bus == null)
+				return NotFound(new ErrorResponse { Message = "Bus blev ikke fundet." });
+
+			return Ok(BusMapper.ToResponse(bus));
 		}
 
 		[HttpPost]
@@ -56,7 +58,8 @@ namespace BusRejser.Controllers
 		public ActionResult Update(int id, [FromBody] BusUpdateRequest request)
 		{
 			var bus = _busService.GetById(id);
-			if (bus == null) return NotFound();
+			if (bus == null)
+				return NotFound(new ErrorResponse { Message = "Bus blev ikke fundet." });
 
 			bus.Registreringnummer = request.Registreringnummer;
 			bus.Model = request.Model;
@@ -66,7 +69,9 @@ namespace BusRejser.Controllers
 			bus.Type = request.Type;
 
 			var ok = _busService.Update(bus);
-			return ok ? Ok() : BadRequest();
+			return ok
+				? Ok()
+				: BadRequest(new ErrorResponse { Message = "Bus kunne ikke opdateres." });
 		}
 
 		[HttpDelete("{id:int}")]
@@ -74,13 +79,15 @@ namespace BusRejser.Controllers
 		public ActionResult Delete(int id)
 		{
 			var ok = _busService.Delete(id);
-			return ok ? Ok() : NotFound();
+			return ok
+				? Ok()
+				: NotFound(new ErrorResponse { Message = "Bus blev ikke fundet." });
 		}
 
 		[HttpGet("{id:int}/faciliteter")]
 		public ActionResult<List<Facilitet>> GetFaciliteter(int id)
 		{
-			return _busService.GetFaciliteterForBus(id);
+			return Ok(_busService.GetFaciliteterForBus(id));
 		}
 
 		[HttpPost("{id:int}/faciliteter/{facilitetId:int}")]
@@ -88,7 +95,9 @@ namespace BusRejser.Controllers
 		public ActionResult AddFacilitet(int id, int facilitetId)
 		{
 			var ok = _busService.AddFacilitet(id, facilitetId);
-			return ok ? Ok() : BadRequest();
+			return ok
+				? Ok()
+				: BadRequest(new ErrorResponse { Message = "Facilitet kunne ikke tilføjes til bus." });
 		}
 
 		[HttpDelete("{id:int}/faciliteter/{facilitetId:int}")]
@@ -96,9 +105,10 @@ namespace BusRejser.Controllers
 		public ActionResult RemoveFacilitet(int id, int facilitetId)
 		{
 			var ok = _busService.RemoveFacilitet(id, facilitetId);
-			return ok ? Ok() : NotFound();
+			return ok
+				? Ok()
+				: NotFound(new ErrorResponse { Message = "Bus eller facilitet blev ikke fundet." });
 		}
-
 
 		[HttpPost("{id:int}/image")]
 		[Authorize(Roles = "Admin,Medarbejder")]
@@ -111,29 +121,16 @@ namespace BusRejser.Controllers
 			}
 			catch (FileNotFoundException ex)
 			{
-				return NotFound(new { message = ex.Message });
+				return NotFound(new ErrorResponse { Message = ex.Message });
 			}
 			catch (ArgumentException ex)
 			{
-				return BadRequest(new { message = ex.Message });
+				return BadRequest(new ErrorResponse { Message = ex.Message });
 			}
 			catch (Exception)
 			{
-				return StatusCode(500, new { message = "Noget gik galt under upload." });
+				return StatusCode(500, new ErrorResponse { Message = "Noget gik galt under upload." });
 			}
 		}
-
-		public class BusCreateRequest
-		{
-			public string Registreringnummer { get; set; }
-			public string Model { get; set; }
-			public string Busselskab { get; set; }
-			public BusStatus Status { get; set; }
-			public BusType Type { get; set; }
-			public int Kapasitet { get; set; }
-			public string? ImageUrl { get; set; }
-		}
-
-		public class BusUpdateRequest : BusCreateRequest { }
 	}
 }

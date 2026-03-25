@@ -1,4 +1,5 @@
-﻿using BusRejser.Services;
+﻿using BusRejser.DTOs;
+using BusRejser.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BusRejser.Controllers
@@ -17,51 +18,24 @@ namespace BusRejser.Controllers
 		[HttpPost("register")]
 		public IActionResult Register([FromBody] RegisterRequest request)
 		{
-			try
-			{
-				var userId = _authService.Register(request.Username, request.Email, request.Password);
+			var userId = _authService.Register(request.Username, request.Email, request.Password);
 
-				return Ok(new
-				{
-					Message = "Bruger oprettet.",
-					UserId = userId
-				});
-			}
-			catch (Exception ex)
+			return Ok(new
 			{
-				return BadRequest(new { Message = ex.Message });
-			}
+				message = "Bruger oprettet.",
+				userId
+			});
 		}
 
 		[HttpPost("login")]
 		public IActionResult Login([FromBody] LoginRequest request)
 		{
-			try
-			{
-				var token = _authService.Login(request.Email, request.Password);
+			var token = _authService.Login(request.Email, request.Password);
 
-				return Ok(new
-				{
-					Token = token
-				});
-			}
-			catch (Exception ex)
+			return Ok(new
 			{
-				return Unauthorized(new { Message = ex.Message });
-			}
+				token
+			});
 		}
-	}
-
-	public class RegisterRequest
-	{
-		public string Username { get; set; } = "";
-		public string Email { get; set; } = "";
-		public string Password { get; set; } = "";
-	}
-
-	public class LoginRequest
-	{
-		public string Email { get; set; } = "";
-		public string Password { get; set; } = "";
 	}
 }

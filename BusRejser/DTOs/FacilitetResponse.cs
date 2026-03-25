@@ -1,0 +1,15 @@
+﻿using BusRejserLibrary.Enums;
+using BusRejserLibrary.Models;
+
+namespace BusRejser.DTOs
+{
+	public class FacilitetResponse
+	{
+		public int Id { get; set; }
+		public string Name { get; set; } = "";
+		public string Description { get; set; } = "";
+		public decimal ExtraPrice { get; set; }
+		public bool IsActive { get; set; }
+		public FacilitetType Type { get; set; }
+	}
+}

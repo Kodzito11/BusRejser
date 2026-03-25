@@ -1,8 +1,9 @@
-﻿using BusRejserLibrary.Models;
+﻿using BusRejser.DTOs;
+using BusRejser.Mappers;
+using BusRejserLibrary.Models;
 using BusRejserLibrary.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 
 namespace BusRejser.Controllers
 {
@@ -19,16 +20,18 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpGet]
-		public ActionResult<List<Facilitet>> GetAll()
+		[AllowAnonymous]
+		public ActionResult<IEnumerable<FacilitetResponse>> GetAll()
 		{
-			return _facilitetService.GetAll();
+			var faciliteter = _facilitetService.GetAll();
+			return Ok(faciliteter.Select(FacilitetMapper.ToResponse));
 		}
 
 		[HttpPost]
 		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult<int> Create([FromBody] FacilitetCreateRequest request)
 		{
-			var f = Facilitet.Create(
+			var facilitet = Facilitet.Create(
 				request.Name,
 				request.Description,
 				request.ExtraPrice,
@@ -36,7 +39,7 @@ namespace BusRejser.Controllers
 				request.IsActive
 			);
 
-			var id = _facilitetService.Create(f);
+			var id = _facilitetService.Create(facilitet);
 			return Ok(id);
 		}
 
@@ -45,16 +48,10 @@ namespace BusRejser.Controllers
 		public ActionResult Delete(int id)
 		{
 			var ok = _facilitetService.Delete(id);
-			return ok ? Ok() : NotFound();
-		}
-	}
 
-	public class FacilitetCreateRequest
-	{
-		public string Name { get; set; }
-		public string Description { get; set; }
-		public decimal ExtraPrice { get; set; }
-		public bool IsActive { get; set; }
-		public FacilitetType Type { get; set; }
+			return ok
+				? Ok()
+				: NotFound(new ErrorResponse { Message = "Facilitet blev ikke fundet." });
+		}
 	}
 }

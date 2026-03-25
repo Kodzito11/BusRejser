@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using BusRejser.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -10,15 +11,17 @@ namespace BusRejser.Controllers
 	public class UserController : ControllerBase
 	{
 		[HttpGet("me")]
-		public IActionResult Me()
+		public ActionResult<UserMeResponse> Me()
 		{
-			return Ok(new
+			var response = new UserMeResponse
 			{
 				UserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
 				Username = User.FindFirst(ClaimTypes.Name)?.Value,
 				Role = User.FindFirst(ClaimTypes.Role)?.Value,
 				Email = User.FindFirst(ClaimTypes.Email)?.Value
-			});
+			};
+
+			return Ok(response);
 		}
 	}
 }

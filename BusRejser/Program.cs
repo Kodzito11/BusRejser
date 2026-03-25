@@ -1,3 +1,4 @@
+using BusRejser.Middleware;
 using BusRejser.Services;
 using BusRejserLibrary.Database;
 using BusRejserLibrary.Repositories;
@@ -97,11 +98,14 @@ builder.Services.AddScoped<StripeService>();
 
 var app = builder.Build();
 
+
 if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseCors("dev");
 

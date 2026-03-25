@@ -1,11 +1,9 @@
-﻿using BusRejserLibrary.Models;
-using BusRejserLibrary.Services;
-using BusRejser.DTOs;
+﻿using BusRejser.DTOs;
 using BusRejser.Mappers;
+using BusRejserLibrary.Models;
+using BusRejserLibrary.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
 
 namespace BusRejser.Controllers
 {
@@ -22,10 +20,9 @@ namespace BusRejser.Controllers
 
 		[HttpGet]
 		[AllowAnonymous]
-		public ActionResult<List<Rejse>> GetAll()
+		public ActionResult<IEnumerable<RejseResponse>> GetAll()
 		{
 			var rejser = _service.GetAll();
-
 			var result = rejser.Select(RejseMapper.ToResponse);
 
 			return Ok(result);
@@ -33,11 +30,13 @@ namespace BusRejser.Controllers
 
 		[HttpGet("{id:int}")]
 		[AllowAnonymous]
-		public ActionResult<Rejse> GetById(int id)
+		public ActionResult<RejseResponse> GetById(int id)
 		{
-			var r = _service.GetById(id);
-			if (r == null) return NotFound();
-			return Ok(RejseMapper.ToResponse(r));
+			var rejse = _service.GetById(id);
+			if (rejse == null)
+				return NotFound(new ErrorResponse { Message = "Rejse blev ikke fundet." });
+
+			return Ok(RejseMapper.ToResponse(rejse));
 		}
 
 		[HttpPost]
@@ -63,7 +62,9 @@ namespace BusRejser.Controllers
 		public ActionResult Delete(int id)
 		{
 			var ok = _service.Delete(id);
-			return ok ? Ok() : NotFound();
+			return ok
+				? Ok()
+				: NotFound(new ErrorResponse { Message = "Rejse blev ikke fundet." });
 		}
 
 		[HttpPut("{id:int}")]
@@ -81,7 +82,9 @@ namespace BusRejser.Controllers
 			);
 
 			var ok = _service.Update(id, rejse);
-			return ok ? Ok() : NotFound();
+			return ok
+				? Ok()
+				: NotFound(new ErrorResponse { Message = "Rejse blev ikke fundet." });
 		}
 	}
 }
