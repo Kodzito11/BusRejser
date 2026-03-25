@@ -114,23 +114,13 @@ namespace BusRejser.Controllers
 		[Authorize(Roles = "Admin,Medarbejder")]
 		public async Task<ActionResult> UploadImage(int id, IFormFile file)
 		{
-			try
+			var imageUrl = await _busService.UploadImageAsync(id, file);
+
+			return Ok(new
 			{
-				var imageUrl = await _busService.UploadImageAsync(id, file);
-				return Ok(new { message = "Billede uploadet.", imageUrl });
-			}
-			catch (FileNotFoundException ex)
-			{
-				return NotFound(new ErrorResponse { Message = ex.Message });
-			}
-			catch (ArgumentException ex)
-			{
-				return BadRequest(new ErrorResponse { Message = ex.Message });
-			}
-			catch (Exception)
-			{
-				return StatusCode(500, new ErrorResponse { Message = "Noget gik galt under upload." });
-			}
+				message = "Billede uploadet.",
+				imageUrl
+			});
 		}
 	}
 }

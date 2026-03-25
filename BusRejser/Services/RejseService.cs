@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using BusRejser.Exceptions;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
 
@@ -14,15 +14,19 @@ namespace BusRejserLibrary.Services
 		}
 
 		public int Create(Rejse rejse) => _repo.Create(rejse);
+
 		public Rejse? GetById(int id) => _repo.GetById(id);
+
 		public List<Rejse> GetAll() => _repo.GetAll();
+
 		public bool Delete(int id)
 		{
 			var existing = _repo.GetById(id);
-			if (existing == null) return false;
+			if (existing == null)
+				return false;
 
 			if (existing.BookedSeats > 0)
-				throw new Exception("Rejsen kan ikke slettes, fordi der allerede findes bookinger.");
+				throw new ConflictException("Rejsen kan ikke slettes, fordi der allerede findes bookinger.");
 
 			return _repo.Delete(id);
 		}
@@ -30,13 +34,13 @@ namespace BusRejserLibrary.Services
 		public bool Update(int id, Rejse rejse)
 		{
 			var existing = _repo.GetById(id);
-			if (existing == null) return false;
+			if (existing == null)
+				return false;
 
 			if (rejse.MaxSeats < existing.BookedSeats)
-				throw new Exception("MaxSeats kan ikke være mindre end allerede bookede pladser.");
+				throw new ValidationException("MaxSeats kan ikke være mindre end allerede bookede pladser.");
 
 			return _repo.Update(id, rejse);
 		}
-
 	}
 }

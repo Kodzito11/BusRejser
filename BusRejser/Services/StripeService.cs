@@ -1,4 +1,5 @@
 ﻿using BusRejser.DTOs;
+using BusRejser.Exceptions;
 using BusRejserLibrary.Repositories;
 using BusRejserLibrary.Services;
 using Stripe;
@@ -34,18 +35,18 @@ namespace BusRejser.Services
 			string origin)
 		{
 			if (request.AntalPladser <= 0)
-				throw new Exception("Antal pladser skal være mindst 1.");
+				throw new ValidationException("Antal pladser skal være mindst 1.");
 
 			var rejse = _rejseRepository.GetById(request.RejseId);
 			if (rejse == null)
-				throw new Exception("Rejse findes ikke.");
+				throw new NotFoundException("Rejse findes ikke.");
 
 			var availableSeats = rejse.MaxSeats - rejse.BookedSeats;
 			if (request.AntalPladser > availableSeats)
-				throw new Exception("Ikke nok ledige pladser.");
+				throw new ValidationException("Ikke nok ledige pladser.");
 
 			if (rejse.Price < 0)
-				throw new Exception("Ugyldig pris på rejse.");
+				throw new ValidationException("Ugyldig pris på rejse.");
 
 			var options = new SessionCreateOptions
 			{
@@ -106,7 +107,7 @@ namespace BusRejser.Services
 
 			var session = stripeEvent.Data.Object as Session;
 			if (session == null)
-				throw new Exception("Stripe session mangler.");
+				throw new ValidationException("Stripe session mangler.");
 
 			HandleCheckoutSessionCompleted(session);
 		}
@@ -120,23 +121,23 @@ namespace BusRejser.Services
 		private StripeWebhookBookingRequest BuildWebhookBookingRequest(Session session)
 		{
 			if (string.IsNullOrWhiteSpace(session.Id))
-				throw new Exception("Stripe session id mangler.");
+				throw new ValidationException("Stripe session id mangler.");
 
 			var metadata = session.Metadata;
 			if (metadata == null)
-				throw new Exception("Stripe metadata mangler.");
+				throw new ValidationException("Stripe metadata mangler.");
 
 			if (!metadata.TryGetValue("rejseId", out var rejseIdRaw) || !int.TryParse(rejseIdRaw, out var rejseId))
-				throw new Exception("Ugyldig rejseId.");
+				throw new ValidationException("Ugyldig rejseId.");
 
 			if (!metadata.TryGetValue("antalPladser", out var antalPladserRaw) || !int.TryParse(antalPladserRaw, out var antalPladser))
-				throw new Exception("Ugyldig antalPladser.");
+				throw new ValidationException("Ugyldig antalPladser.");
 
 			if (!metadata.TryGetValue("kundeNavn", out var kundeNavn) || string.IsNullOrWhiteSpace(kundeNavn))
-				throw new Exception("Manglende kundeNavn.");
+				throw new ValidationException("Manglende kundeNavn.");
 
 			if (!metadata.TryGetValue("kundeEmail", out var kundeEmail) || string.IsNullOrWhiteSpace(kundeEmail))
-				throw new Exception("Manglende kundeEmail.");
+				throw new ValidationException("Manglende kundeEmail.");
 
 			int? userId = null;
 			if (metadata.TryGetValue("userId", out var userIdRaw) &&

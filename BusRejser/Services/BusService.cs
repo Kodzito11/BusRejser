@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using BusRejser.Exceptions;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
 using SixLabors.ImageSharp;
@@ -51,29 +50,29 @@ namespace BusRejserLibrary.Services
 		{
 			var bus = _busRepository.GetById(busId);
 			if (bus == null)
-				throw new FileNotFoundException("Bus ikke fundet.");
+				throw new NotFoundException("Bus ikke fundet.");
 
 			if (file == null || file.Length == 0)
-				throw new ArgumentException("Du skal vælge en fil.");
+				throw new ValidationException("Du skal vælge en fil.");
 
 			var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
 			var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
 			if (!allowedExtensions.Contains(extension))
-				throw new ArgumentException("Kun JPG, JPEG, PNG og WEBP er tilladt.");
+				throw new ValidationException("Kun JPG, JPEG, PNG og WEBP er tilladt.");
 
 			if (string.IsNullOrWhiteSpace(file.ContentType) || !file.ContentType.StartsWith("image/"))
-				throw new ArgumentException("Filen skal være et billede.");
+				throw new ValidationException("Filen skal være et billede.");
 
 			const long maxBytes = 5 * 1024 * 1024;
 			if (file.Length > maxBytes)
-				throw new ArgumentException("Filen er for stor. Maks 5 MB.");
+				throw new ValidationException("Filen er for stor. Maks 5 MB.");
 
 			await using var readStream = file.OpenReadStream();
 			using var image = await Image.LoadAsync(readStream);
 
 			if (image.Width < 800 || image.Height < 450)
-				throw new ArgumentException("Billedet er for lille. Minimum er 800x450.");
+				throw new ValidationException("Billedet er for lille. Minimum er 800x450.");
 
 			const int targetWidth = 1280;
 			const int targetHeight = 720;
@@ -87,7 +86,6 @@ namespace BusRejserLibrary.Services
 
 			if (currentRatio > targetRatio)
 			{
-				// billedet er for bredt -> skær siderne
 				cropHeight = image.Height;
 				cropWidth = (int)(cropHeight * targetRatio);
 				cropX = (image.Width - cropWidth) / 2;
@@ -95,7 +93,6 @@ namespace BusRejserLibrary.Services
 			}
 			else
 			{
-				// billedet er for højt / for kvadratisk -> skær top og bund
 				cropWidth = image.Width;
 				cropHeight = (int)(cropWidth / targetRatio);
 				cropX = 0;
@@ -136,12 +133,11 @@ namespace BusRejserLibrary.Services
 			if (!updated)
 				throw new Exception("Kunne ikke gemme billedesti.");
 
-			return bus.ImageUrl;
+			return bus.ImageUrl!;
 		}
 
 		public bool AddFacilitet(int busId, int facilitetId)
 		{
-			// quick sanity checks
 			if (_busRepository.GetById(busId) == null) return false;
 			if (_facilitetRepository.GetById(facilitetId) == null) return false;
 

@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Text.Json;
 using BusRejser.DTOs;
+using BusRejser.Exceptions;
 
 namespace BusRejser.Middleware
 {
@@ -26,29 +27,16 @@ namespace BusRejser.Middleware
 		}
 
 		private static Task HandleExceptionAsync(HttpContext context, Exception ex)
-		
 		{
-			var statusCode = HttpStatusCode.InternalServerError;
-
-			var message = ex.Message.ToLower();
-
-			if (message.Contains("findes ikke"))
-				statusCode = HttpStatusCode.NotFound;
-
-			else if (message.Contains("ikke nok"))
-				statusCode = HttpStatusCode.BadRequest;
-
-			else if (message.Contains("ugyldig"))
-				statusCode = HttpStatusCode.BadRequest;
-
-			else if (message.Contains("allerede"))
-				statusCode = HttpStatusCode.BadRequest;
-
-			else if (message.Contains("forkert") || message.Contains("password"))
-				statusCode = HttpStatusCode.Unauthorized;
-
-			else if (message.Contains("må kun"))
-				statusCode = HttpStatusCode.Forbidden;
+			var statusCode = ex switch
+			{
+				NotFoundException => HttpStatusCode.NotFound,
+				ValidationException => HttpStatusCode.BadRequest,
+				UnauthorizedException => HttpStatusCode.Unauthorized,
+				ForbiddenException => HttpStatusCode.Forbidden,
+				ConflictException => HttpStatusCode.Conflict,
+				_ => HttpStatusCode.InternalServerError
+			};
 
 			var response = new ErrorResponse
 			{

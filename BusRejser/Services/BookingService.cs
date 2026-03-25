@@ -1,9 +1,9 @@
 ﻿using BusRejser.DTOs;
+using BusRejser.Exceptions;
 using BusRejser.Mappers;
 using BusRejserLibrary.Enums;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
-using Stripe.Checkout;
 
 namespace BusRejserLibrary.Services
 {
@@ -77,14 +77,14 @@ namespace BusRejserLibrary.Services
 		{
 			var rejse = _rejseRepository.GetById(booking.RejseId);
 			if (rejse == null)
-				throw new Exception("Rejse findes ikke.");
+				throw new NotFoundException("Rejse findes ikke.");
 
 			if (booking.Status != BookingStatus.Paid)
-				throw new Exception("Kun betalte bookinger kan oprettes.");
+				throw new ValidationException("Kun betalte bookinger kan oprettes.");
 
 			var reserved = _rejseRepository.TryReserveSeats(booking.RejseId, booking.AntalPladser);
 			if (!reserved)
-				throw new Exception("Ikke nok ledige pladser.");
+				throw new ValidationException("Ikke nok ledige pladser.");
 
 			try
 			{
@@ -101,7 +101,7 @@ namespace BusRejserLibrary.Services
 		{
 			var rejse = _rejseRepository.GetById(rejseId);
 			if (rejse == null)
-				throw new Exception("Rejse findes ikke.");
+				throw new NotFoundException("Rejse findes ikke.");
 
 			return rejse.MaxSeats - rejse.BookedSeats;
 		}
@@ -116,22 +116,22 @@ namespace BusRejserLibrary.Services
 				return true;
 
 			if (booking.Status != BookingStatus.Paid)
-				throw new Exception("Kun betalte bookinger kan annulleres.");
+				throw new ValidationException("Kun betalte bookinger kan annulleres.");
 
 			if (!isStaff)
 			{
 				if (!actingUserId.HasValue)
-					throw new Exception("Ugyldig bruger.");
+					throw new ValidationException("Ugyldig bruger.");
 
 				if (booking.UserId != actingUserId.Value)
-					throw new Exception("Du må kun annullere dine egne bookinger.");
+					throw new ForbiddenException("Du må kun annullere dine egne bookinger.");
 
 				var rejse = _rejseRepository.GetById(booking.RejseId);
 				if (rejse == null)
-					throw new Exception("Rejse findes ikke.");
+					throw new NotFoundException("Rejse findes ikke.");
 
 				if (rejse.StartAt <= DateTime.UtcNow.AddHours(24))
-					throw new Exception("Booking kan kun annulleres senest 24 timer før afgang.");
+					throw new ValidationException("Booking kan kun annulleres senest 24 timer før afgang.");
 			}
 
 			var cancelled = _bookingRepository.Cancel(bookingId);
@@ -151,11 +151,11 @@ namespace BusRejserLibrary.Services
 				return true;
 
 			if (booking.Status != BookingStatus.Cancelled)
-				throw new Exception("Kun annullerede bookinger kan genaktiveres.");
+				throw new ValidationException("Kun annullerede bookinger kan genaktiveres.");
 
 			var reserved = _rejseRepository.TryReserveSeats(booking.RejseId, booking.AntalPladser);
 			if (!reserved)
-				throw new Exception("Ikke nok ledige pladser til at genaktivere bookingen.");
+				throw new ValidationException("Ikke nok ledige pladser til at genaktivere bookingen.");
 
 			try
 			{
