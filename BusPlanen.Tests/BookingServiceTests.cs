@@ -199,7 +199,7 @@ public class BookingServiceTests
 		);
 
 		bookingRepo.Setup(x => x.GetById(1)).Returns(booking);
-		bookingRepo.Setup(x => x.ReactivateAndReserveSeats(1)).Returns(true); 
+		bookingRepo.Setup(x => x.ReactivateAndReserveSeats(1)).Returns(true);
 
 		var service = new BookingService(
 			bookingRepo.Object,
@@ -214,5 +214,148 @@ public class BookingServiceTests
 		// Assert
 		Assert.True(result);
 		bookingRepo.Verify(x => x.ReactivateAndReserveSeats(1), Times.Once);
+	}
+
+	[Fact]
+	public void Create_RejseWhenDoestNotExist_ThrowsNotFoundException()
+	{
+		// Arrange
+		var bookingRepo = new Mock<IBookingRepository>();
+		var rejseRepo = new Mock<IRejseRepository>();
+		var userRepo = new Mock<IUserRepository>();
+		var logger = new Mock<ILogger<BookingService>>();
+
+		rejseRepo.Setup(x => x.GetById(999)).Returns((Rejse?)null);
+
+		var service = new BookingService(
+			bookingRepo.Object,
+			rejseRepo.Object,
+			userRepo.Object,
+			logger.Object
+		);
+
+		var booking = Booking.Create(
+			999,
+			null,
+			"Test User",
+			"test@test.dk",
+			2,
+			200m
+		);
+
+		booking.MarkAsPaid("sess_123", "pi_123");
+
+		//Act + Assert
+		Assert.Throws<NotFoundException>(() => service.Create(booking));
+
+	}
+
+	[Fact]
+	public void Create_WhenBookingIsNotPaid_ThrowsValidationException()
+	{
+		// Arrange
+		var bookingRepo = new Mock<IBookingRepository>();
+		var rejseRepo = new Mock<IRejseRepository>();
+		var userRepo = new Mock<IUserRepository>();
+		var logger = new Mock<ILogger<BookingService>>();
+
+		var rejse = Rejse.Create(
+			"Test",
+			"København",
+			DateTime.UtcNow.AddDays(2),
+			DateTime.UtcNow.AddDays(3),
+			100,
+			50,
+			null
+		);
+
+		rejse.RejseId = 1;
+		rejseRepo
+			.Setup(x => x.GetById(1))
+			.Returns(rejse);
+
+
+		var service = new BookingService(
+			bookingRepo.Object,
+			rejseRepo.Object,
+			userRepo.Object,
+			logger.Object
+		);
+
+		var booking = Booking.Create(
+			1,
+			null,
+			"Test User",
+			"test@test.dk",
+			2,
+			200m
+		);
+
+		// Act + Assert
+		Assert.Throws<ValidationException>(() => service.Create(booking));
+		bookingRepo.Verify(x => x.Create(It.IsAny<Booking>()), Times.Never);
+	}
+
+	[Fact]
+	public void Create_WhenRepositoryFailsAfterSeatReservation_ReleasesSeatsAndRethrows()
+	{
+		
+
+		// Arrange
+		var bookingRepo = new Mock<IBookingRepository>();
+		var rejseRepo = new Mock<IRejseRepository>();
+		var userRepo = new Mock<IUserRepository>();
+		var logger = new Mock<ILogger<BookingService>>();
+
+		var rejse = Rejse.Create(
+			"Test",
+			"København",
+			DateTime.UtcNow.AddDays(2),
+			DateTime.UtcNow.AddDays(3),
+			100,
+			50,
+			null
+		);
+
+		rejse.RejseId = 1;
+
+		rejseRepo
+			.Setup(x => x.GetById(1))
+			.Returns(rejse);
+
+		rejseRepo
+			.Setup(x => x.TryReserveSeats(1, 2))
+			.Returns(true);
+
+		bookingRepo
+			.Setup(x => x.Create(It.IsAny<Booking>()))
+			.Throws(new Exception("DB failed"));
+
+		var service = new BookingService(
+			bookingRepo.Object,
+			rejseRepo.Object,
+			userRepo.Object,
+			logger.Object
+		);
+
+		var booking = Booking.Create(
+			1,
+			null,
+			"Test User",
+			"test@test.dk",
+			2,
+			200m
+		);
+		
+		booking.MarkAsPaid("sess_123", "pi_123");
+		
+
+		// Act + Assert
+		var ex = Assert.Throws<Exception>(() => service.Create(booking));
+
+		Assert.Equal("DB failed", ex.Message);
+		rejseRepo.Verify(x => x.TryReserveSeats(1, 2), Times.Once);
+		rejseRepo.Verify(x => x.ReleaseSeats(1, 2), Times.Once);
+		bookingRepo.Verify(x => x.Create(It.IsAny<Booking>()), Times.Once);
 	}
 }
