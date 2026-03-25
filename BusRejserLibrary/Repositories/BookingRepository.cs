@@ -240,40 +240,186 @@ namespace BusRejserLibrary.Repositories
 			return list;
 		}
 
-		public bool Cancel(int id)
+		public bool CancelAndReleaseSeats(int bookingId)
 		{
-			const string sql = @"
-				UPDATE booking
-				SET status = @cancelledStatus
-				WHERE bookingId = @id AND status = @paidStatus;";
-
 			using var conn = _db.GetConnection();
 			conn.Open();
 
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@id", id);
-			cmd.Parameters.AddWithValue("@cancelledStatus", (int)BookingStatus.Cancelled);
-			cmd.Parameters.AddWithValue("@paidStatus", (int)BookingStatus.Paid);
+			using var transaction = conn.BeginTransaction();
 
-			return cmd.ExecuteNonQuery() > 0;
+			try
+			{
+				const string selectSql = @"
+					SELECT rejseId, antalPladser, status
+					FROM booking
+					WHERE bookingId = @bookingId
+					FOR UPDATE;";
+
+				int rejseId;
+				int antalPladser;
+				int status;
+
+				using (var selectCmd = new MySqlCommand(selectSql, conn, transaction))
+				{
+					selectCmd.Parameters.AddWithValue("@bookingId", bookingId);
+
+					using var reader = selectCmd.ExecuteReader();
+
+					if (!reader.Read())
+					{
+						transaction.Rollback();
+						return false;
+					}
+
+					rejseId = reader.GetInt32("rejseId");
+					antalPladser = reader.GetInt32("antalPladser");
+					status = reader.GetInt32("status");
+				}
+
+				if ((BookingStatus)status == BookingStatus.Cancelled)
+				{
+					transaction.Commit();
+					return true;
+				}
+
+				const string cancelSql = @"
+					UPDATE booking
+					SET status = @cancelledStatus
+					WHERE bookingId = @bookingId
+					  AND status = @paidStatus;";
+
+				using (var cancelCmd = new MySqlCommand(cancelSql, conn, transaction))
+				{
+					cancelCmd.Parameters.AddWithValue("@bookingId", bookingId);
+					cancelCmd.Parameters.AddWithValue("@cancelledStatus", (int)BookingStatus.Cancelled);
+					cancelCmd.Parameters.AddWithValue("@paidStatus", (int)BookingStatus.Paid);
+
+					var cancelRows = cancelCmd.ExecuteNonQuery();
+					if (cancelRows == 0)
+					{
+						transaction.Rollback();
+						return false;
+					}
+				}
+
+				const string releaseSeatsSql = @"
+					UPDATE rejse
+					SET bookedSeats = bookedSeats - @antalPladser
+					WHERE rejseId = @rejseId
+					  AND bookedSeats >= @antalPladser;";
+
+				using (var seatsCmd = new MySqlCommand(releaseSeatsSql, conn, transaction))
+				{
+					seatsCmd.Parameters.AddWithValue("@rejseId", rejseId);
+					seatsCmd.Parameters.AddWithValue("@antalPladser", antalPladser);
+
+					var seatRows = seatsCmd.ExecuteNonQuery();
+					if (seatRows == 0)
+					{
+						transaction.Rollback();
+						return false;
+					}
+				}
+
+				transaction.Commit();
+				return true;
+			}
+			catch
+			{
+				transaction.Rollback();
+				throw;
+			}
 		}
 
-		public bool Reactivate(int id)
+		public bool ReactivateAndReserveSeats(int bookingId)
 		{
-			const string sql = @"
-				UPDATE booking
-				SET status = @paidStatus
-				WHERE bookingId = @id AND status = @cancelledStatus;";
-
 			using var conn = _db.GetConnection();
 			conn.Open();
 
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@id", id);
-			cmd.Parameters.AddWithValue("@paidStatus", (int)BookingStatus.Paid);
-			cmd.Parameters.AddWithValue("@cancelledStatus", (int)BookingStatus.Cancelled);
+			using var transaction = conn.BeginTransaction();
 
-			return cmd.ExecuteNonQuery() > 0;
+			try
+			{
+				const string selectSql = @"
+					SELECT rejseId, antalPladser, status
+					FROM booking
+					WHERE bookingId = @bookingId
+					FOR UPDATE;";
+
+				int rejseId;
+				int antalPladser;
+				int status;
+
+				using (var selectCmd = new MySqlCommand(selectSql, conn, transaction))
+				{
+					selectCmd.Parameters.AddWithValue("@bookingId", bookingId);
+
+					using var reader = selectCmd.ExecuteReader();
+
+					if (!reader.Read())
+					{
+						transaction.Rollback();
+						return false;
+					}
+
+					rejseId = reader.GetInt32("rejseId");
+					antalPladser = reader.GetInt32("antalPladser");
+					status = reader.GetInt32("status");
+				}
+
+				if ((BookingStatus)status == BookingStatus.Paid)
+				{
+					transaction.Commit();
+					return true;
+				}
+
+				const string reserveSeatsSql = @"
+					UPDATE rejse
+					SET bookedSeats = bookedSeats + @antalPladser
+					WHERE rejseId = @rejseId
+					  AND bookedSeats + @antalPladser <= maxSeats;";
+
+				using (var seatsCmd = new MySqlCommand(reserveSeatsSql, conn, transaction))
+				{
+					seatsCmd.Parameters.AddWithValue("@rejseId", rejseId);
+					seatsCmd.Parameters.AddWithValue("@antalPladser", antalPladser);
+
+					var seatRows = seatsCmd.ExecuteNonQuery();
+					if (seatRows == 0)
+					{
+						transaction.Rollback();
+						return false;
+					}
+				}
+
+				const string reactivateSql = @"
+					UPDATE booking
+					SET status = @paidStatus
+					WHERE bookingId = @bookingId
+					  AND status = @cancelledStatus;";
+
+				using (var reactivateCmd = new MySqlCommand(reactivateSql, conn, transaction))
+				{
+					reactivateCmd.Parameters.AddWithValue("@bookingId", bookingId);
+					reactivateCmd.Parameters.AddWithValue("@paidStatus", (int)BookingStatus.Paid);
+					reactivateCmd.Parameters.AddWithValue("@cancelledStatus", (int)BookingStatus.Cancelled);
+
+					var reactivateRows = reactivateCmd.ExecuteNonQuery();
+					if (reactivateRows == 0)
+					{
+						transaction.Rollback();
+						return false;
+					}
+				}
+
+				transaction.Commit();
+				return true;
+			}
+			catch
+			{
+				transaction.Rollback();
+				throw;
+			}
 		}
 
 		private static Booking Map(MySqlDataReader reader)

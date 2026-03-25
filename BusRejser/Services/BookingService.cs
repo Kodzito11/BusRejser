@@ -134,13 +134,9 @@ namespace BusRejserLibrary.Services
 					throw new ValidationException("Booking kan kun annulleres senest 24 timer før afgang.");
 			}
 
-			var cancelled = _bookingRepository.Cancel(bookingId);
+			var cancelled = _bookingRepository.CancelAndReleaseSeats(bookingId);
 			if (!cancelled)
 				throw new ConflictException("Booking kunne ikke annulleres.");
-
-			var seatsReleased = _rejseRepository.ReleaseSeats(booking.RejseId, booking.AntalPladser);
-			if (!seatsReleased)
-				throw new ConflictException("Booking blev annulleret, men pladser kunne ikke frigives.");
 
 			return true;
 		}
@@ -157,23 +153,11 @@ namespace BusRejserLibrary.Services
 			if (booking.Status != BookingStatus.Cancelled)
 				throw new ValidationException("Kun annullerede bookinger kan genaktiveres.");
 
-			var reserved = _rejseRepository.TryReserveSeats(booking.RejseId, booking.AntalPladser);
-			if (!reserved)
-				throw new ValidationException("Ikke nok ledige pladser til at genaktivere bookingen.");
+			var reactivated = _bookingRepository.ReactivateAndReserveSeats(bookingId);
+			if (!reactivated)
+				throw new ConflictException("Booking kunne ikke genaktiveres.");
 
-			try
-			{
-				var reactivated = _bookingRepository.Reactivate(bookingId);
-				if (!reactivated)
-					throw new ConflictException("Booking kunne ikke genaktiveres.");
-
-				return true;
-			}
-			catch
-			{
-				_rejseRepository.ReleaseSeats(booking.RejseId, booking.AntalPladser);
-				throw;
-			}
+			return true;
 		}
 
 		public void CreateFromStripe(StripeWebhookBookingRequest request)
