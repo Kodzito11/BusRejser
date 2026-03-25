@@ -23,24 +23,32 @@ namespace BusRejserLibrary.Services
 		{
 			var existing = _repo.GetById(id);
 			if (existing == null)
-				return false;
+				throw new NotFoundException("Rejse blev ikke fundet.");
 
 			if (existing.BookedSeats > 0)
 				throw new ConflictException("Rejsen kan ikke slettes, fordi der allerede findes bookinger.");
 
-			return _repo.Delete(id);
+			var deleted = _repo.Delete(id);
+			if (!deleted)
+				throw new ConflictException("Rejsen kunne ikke slettes.");
+
+			return true;
 		}
 
 		public bool Update(int id, Rejse rejse)
 		{
 			var existing = _repo.GetById(id);
 			if (existing == null)
-				return false;
+				throw new NotFoundException("Rejse blev ikke fundet.");
 
 			if (rejse.MaxSeats < existing.BookedSeats)
 				throw new ValidationException("MaxSeats kan ikke være mindre end allerede bookede pladser.");
 
-			return _repo.Update(id, rejse);
+			var updated = _repo.Update(id, rejse);
+			if (!updated)
+				throw new ConflictException("Rejsen kunne ikke opdateres.");
+
+			return true;
 		}
 	}
 }

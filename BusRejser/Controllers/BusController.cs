@@ -94,20 +94,16 @@ namespace BusRejser.Controllers
 		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult AddFacilitet(int id, int facilitetId)
 		{
-			var ok = _busService.AddFacilitet(id, facilitetId);
-			return ok
-				? Ok()
-				: BadRequest(new ErrorResponse { Message = "Facilitet kunne ikke tilføjes til bus." });
+			_busService.AddFacilitet(id, facilitetId);
+			return Ok();
 		}
 
 		[HttpDelete("{id:int}/faciliteter/{facilitetId:int}")]
 		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult RemoveFacilitet(int id, int facilitetId)
 		{
-			var ok = _busService.RemoveFacilitet(id, facilitetId);
-			return ok
-				? Ok()
-				: NotFound(new ErrorResponse { Message = "Bus eller facilitet blev ikke fundet." });
+			_busService.RemoveFacilitet(id, facilitetId);
+			return Ok();
 		}
 
 		[HttpPost("{id:int}/image")]

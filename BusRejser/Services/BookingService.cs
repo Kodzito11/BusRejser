@@ -110,7 +110,7 @@ namespace BusRejserLibrary.Services
 		{
 			var booking = _bookingRepository.GetById(bookingId);
 			if (booking == null)
-				return false;
+				throw new NotFoundException("Booking blev ikke fundet.");
 
 			if (booking.Status == BookingStatus.Cancelled)
 				return true;
@@ -136,16 +136,20 @@ namespace BusRejserLibrary.Services
 
 			var cancelled = _bookingRepository.Cancel(bookingId);
 			if (!cancelled)
-				return false;
+				throw new ConflictException("Booking kunne ikke annulleres.");
 
-			return _rejseRepository.ReleaseSeats(booking.RejseId, booking.AntalPladser);
+			var seatsReleased = _rejseRepository.ReleaseSeats(booking.RejseId, booking.AntalPladser);
+			if (!seatsReleased)
+				throw new ConflictException("Booking blev annulleret, men pladser kunne ikke frigives.");
+
+			return true;
 		}
 
 		public bool Reactivate(int bookingId)
 		{
 			var booking = _bookingRepository.GetById(bookingId);
 			if (booking == null)
-				return false;
+				throw new NotFoundException("Booking blev ikke fundet.");
 
 			if (booking.Status == BookingStatus.Paid)
 				return true;
@@ -159,7 +163,11 @@ namespace BusRejserLibrary.Services
 
 			try
 			{
-				return _bookingRepository.Reactivate(bookingId);
+				var reactivated = _bookingRepository.Reactivate(bookingId);
+				if (!reactivated)
+					throw new ConflictException("Booking kunne ikke genaktiveres.");
+
+				return true;
 			}
 			catch
 			{

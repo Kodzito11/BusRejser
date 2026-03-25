@@ -131,22 +131,43 @@ namespace BusRejserLibrary.Services
 
 			var updated = _busRepository.Update(bus);
 			if (!updated)
-				throw new Exception("Kunne ikke gemme billedesti.");
+				throw new ConflictException("Kunne ikke gemme billedesti.");
 
 			return bus.ImageUrl!;
 		}
 
 		public bool AddFacilitet(int busId, int facilitetId)
 		{
-			if (_busRepository.GetById(busId) == null) return false;
-			if (_facilitetRepository.GetById(facilitetId) == null) return false;
+			var bus = _busRepository.GetById(busId);
+			if (bus == null)
+				throw new NotFoundException("Bus ikke fundet.");
 
-			return _busFacilitetRepository.Add(busId, facilitetId);
+			var facilitet = _facilitetRepository.GetById(facilitetId);
+			if (facilitet == null)
+				throw new NotFoundException("Facilitet ikke fundet.");
+
+			var added = _busFacilitetRepository.Add(busId, facilitetId);
+			if (!added)
+				throw new ConflictException("Facilitet kunne ikke tilføjes til bus.");
+
+			return true;
 		}
 
 		public bool RemoveFacilitet(int busId, int facilitetId)
 		{
-			return _busFacilitetRepository.Remove(busId, facilitetId);
+			var bus = _busRepository.GetById(busId);
+			if (bus == null)
+				throw new NotFoundException("Bus ikke fundet.");
+
+			var facilitet = _facilitetRepository.GetById(facilitetId);
+			if (facilitet == null)
+				throw new NotFoundException("Facilitet ikke fundet.");
+
+			var removed = _busFacilitetRepository.Remove(busId, facilitetId);
+			if (!removed)
+				throw new ConflictException("Facilitet kunne ikke fjernes fra bus.");
+
+			return true;
 		}
 	}
 }

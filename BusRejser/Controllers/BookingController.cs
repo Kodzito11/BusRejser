@@ -1,8 +1,9 @@
-﻿using System.Security.Claims;
-using BusRejser.DTOs;
+﻿using BusRejser.DTOs;
+using BusRejser.Exceptions;
 using BusRejserLibrary.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace BusRejser.Controllers
 {
@@ -21,116 +22,75 @@ namespace BusRejser.Controllers
 		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult<IEnumerable<BookingResponse>> GetAll()
 		{
-			try
-			{
-				return Ok(_bookingService.GetAllResponses());
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(Error(ex.Message));
-			}
+			return Ok(_bookingService.GetAllResponses());
 		}
 
 		[HttpPost]
 		[AllowAnonymous]
 		public ActionResult Create()
 		{
-			return BadRequest(Error("Direkte booking er ikke længere aktiv. Brug Stripe checkout flow."));
+			return BadRequest(new ErrorResponse
+			{
+				Message = "Direkte booking er ikke længere aktiv. Brug Stripe checkout flow."
+			});
 		}
 
 		[HttpGet("rejse/{rejseId:int}")]
 		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult<IEnumerable<BookingResponse>> GetByRejseId(int rejseId)
 		{
-			try
-			{
-				return Ok(_bookingService.GetByRejseIdResponses(rejseId));
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(Error(ex.Message));
-			}
+			return Ok(_bookingService.GetByRejseIdResponses(rejseId));
 		}
 
 		[HttpGet("mine")]
 		[Authorize(Roles = "Kunde")]
 		public ActionResult<IEnumerable<BookingResponse>> GetMine()
 		{
-			try
-			{
-				var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-				if (!int.TryParse(userIdRaw, out var userId))
-					return Unauthorized(Error("Ugyldig bruger."));
+			if (!int.TryParse(userIdRaw, out var userId))
+				throw new UnauthorizedException("Ugyldig bruger.");
 
-				return Ok(_bookingService.GetByUserIdResponses(userId));
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(Error(ex.Message));
-			}
+			return Ok(_bookingService.GetByUserIdResponses(userId));
 		}
 
 		[HttpGet("rejse/{rejseId:int}/available-seats")]
 		[AllowAnonymous]
 		public ActionResult<int> GetAvailableSeats(int rejseId)
 		{
-			try
-			{
-				return Ok(_bookingService.GetAvailableSeats(rejseId));
-			}
-			catch (Exception ex)
-			{
-				return NotFound(Error(ex.Message));
-			}
+			return Ok(_bookingService.GetAvailableSeats(rejseId));
 		}
 
 		[HttpPut("{id:int}/cancel")]
 		[Authorize]
 		public ActionResult Cancel(int id)
 		{
-			try
+			var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+			var isStaff = role == "Admin" || role == "Medarbejder";
+
+			int? userId = null;
+
+			if (!isStaff)
 			{
-				var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
-				var isStaff = role == "Admin" || role == "Medarbejder";
+				var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-				int? userId = null;
-				if (!isStaff)
-				{
-					var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-					if (!int.TryParse(userIdRaw, out var parsedUserId))
-						return Unauthorized(Error("Ugyldig bruger."));
+				if (!int.TryParse(userIdRaw, out var parsedUserId))
+					throw new UnauthorizedException("Ugyldig bruger.");
 
-					userId = parsedUserId;
-				}
-
-				var ok = _bookingService.Cancel(id, userId, isStaff);
-				return ok ? Ok() : NotFound(Error("Booking blev ikke fundet."));
+				userId = parsedUserId;
 			}
-			catch (Exception ex)
-			{
-				return BadRequest(Error(ex.Message));
-			}
+
+			_bookingService.Cancel(id, userId, isStaff);
+
+			return Ok();
 		}
 
 		[HttpPut("{id:int}/reactivate")]
 		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult Reactivate(int id)
 		{
-			try
-			{
-				var ok = _bookingService.Reactivate(id);
-				return ok ? Ok() : NotFound(Error("Booking blev ikke fundet."));
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(Error(ex.Message));
-			}
-		}
-
-		private static ErrorResponse Error(string message)
-		{
-			return new ErrorResponse { Message = message };
+			_bookingService.Reactivate(id);
+			return Ok();
 		}
 	}
 }

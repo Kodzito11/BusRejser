@@ -24,7 +24,7 @@ namespace BusRejser.Services
 
 			var secretKey = _configuration["Stripe:SecretKey"];
 			if (string.IsNullOrWhiteSpace(secretKey))
-				throw new Exception("Stripe:SecretKey mangler.");
+				throw new ValidationException("Stripe:SecretKey mangler.");
 
 			StripeConfiguration.ApiKey = secretKey;
 		}
@@ -85,7 +85,7 @@ namespace BusRejser.Services
 			var session = sessionService.Create(options);
 
 			if (string.IsNullOrWhiteSpace(session.Url))
-				throw new Exception("Stripe returnerede ikke en checkout-url.");
+				throw new ConflictException("Stripe returnerede ikke en checkout-url.");
 
 			return session.Url;
 		}
@@ -94,7 +94,7 @@ namespace BusRejser.Services
 		{
 			var webhookSecret = _configuration["Stripe:WebhookSecret"];
 			if (string.IsNullOrWhiteSpace(webhookSecret))
-				throw new Exception("Stripe webhook secret mangler.");
+				throw new ValidationException("Stripe webhook secret mangler.");
 
 			var stripeEvent = EventUtility.ConstructEvent(
 				json,

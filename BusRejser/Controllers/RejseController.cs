@@ -61,10 +61,8 @@ namespace BusRejser.Controllers
 		[Authorize(Roles = "Admin,Medarbejder")]
 		public ActionResult Delete(int id)
 		{
-			var ok = _service.Delete(id);
-			return ok
-				? Ok()
-				: NotFound(new ErrorResponse { Message = "Rejse blev ikke fundet." });
+			_service.Delete(id);
+			return Ok();
 		}
 
 		[HttpPut("{id:int}")]
@@ -81,10 +79,8 @@ namespace BusRejser.Controllers
 				request.BusId
 			);
 
-			var ok = _service.Update(id, rejse);
-			return ok
-				? Ok()
-				: NotFound(new ErrorResponse { Message = "Rejse blev ikke fundet." });
+			_service.Update(id, rejse);
+			return Ok();
 		}
 	}
 }

@@ -3,7 +3,6 @@ using BusRejser.DTOs;
 using BusRejser.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Stripe;
 
 namespace BusRejser.Controllers
 {
@@ -22,29 +21,22 @@ namespace BusRejser.Controllers
 		[AllowAnonymous]
 		public ActionResult CreateCheckoutSession([FromBody] CreateCheckoutSessionRequest request)
 		{
-			try
+			int? userId = null;
+
+			if (User.Identity?.IsAuthenticated == true)
 			{
-				int? userId = null;
-
-				if (User.Identity?.IsAuthenticated == true)
-				{
-					var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-					if (int.TryParse(userIdRaw, out var parsedUserId))
-						userId = parsedUserId;
-				}
-
-				var origin = Request.Headers.Origin.FirstOrDefault();
-				if (string.IsNullOrWhiteSpace(origin))
-					origin = "http://localhost:5173";
-
-				var url = _stripeService.CreateCheckoutSession(request, userId, origin);
-
-				return Ok(new { url });
+				var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+				if (int.TryParse(userIdRaw, out var parsedUserId))
+					userId = parsedUserId;
 			}
-			catch (Exception ex)
-			{
-				return BadRequest(new ErrorResponse { Message = ex.Message });
-			}
+
+			var origin = Request.Headers.Origin.FirstOrDefault();
+			if (string.IsNullOrWhiteSpace(origin))
+				origin = "http://localhost:5173";
+
+			var url = _stripeService.CreateCheckoutSession(request, userId, origin);
+
+			return Ok(new { url });
 		}
 
 		[HttpPost("webhook")]
@@ -52,22 +44,11 @@ namespace BusRejser.Controllers
 		public async Task<IActionResult> Webhook()
 		{
 			var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+			var stripeSignature = Request.Headers["Stripe-Signature"].ToString();
 
-			try
-			{
-				var stripeSignature = Request.Headers["Stripe-Signature"].ToString();
-				_stripeService.HandleWebhook(json, stripeSignature);
+			_stripeService.HandleWebhook(json, stripeSignature);
 
-				return Ok();
-			}
-			catch (StripeException ex)
-			{
-				return BadRequest(new ErrorResponse { Message = $"Stripe webhook error: {ex.Message}" });
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(new ErrorResponse { Message = ex.Message });
-			}
+			return Ok();
 		}
 	}
 }
