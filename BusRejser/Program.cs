@@ -128,7 +128,7 @@ app.UseSerilogRequestLogging(options =>
 });
 
 app.UseMiddleware<CorrelationIdMiddleware>();
-app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<ExceptionMiddleware>();
 
 
 if (app.Environment.IsDevelopment())
@@ -136,8 +136,6 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
-
-app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseCors("dev");
 

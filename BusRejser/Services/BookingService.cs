@@ -80,21 +80,46 @@ namespace BusRejserLibrary.Services
 		{
 			var rejse = _rejseRepository.GetById(booking.RejseId);
 			if (rejse == null)
+			{
+				_logger.LogWarning("Booking create failed because RejseId {RejseId} was not found", booking.RejseId);
 				throw new NotFoundException("Rejse findes ikke.");
+			}
 
 			if (booking.Status != BookingStatus.Paid)
 				throw new ValidationException("Kun betalte bookinger kan oprettes.");
 
+			_logger.LogInformation(
+				"Creating booking for RejseId {RejseId} with {Seats} seats",
+				booking.RejseId,
+				booking.AntalPladser);
+
 			var reserved = _rejseRepository.TryReserveSeats(booking.RejseId, booking.AntalPladser);
 			if (!reserved)
+			{
+				_logger.LogWarning(
+					"Booking failed - not enough seats for RejseId {RejseId}",
+					booking.RejseId);
+
 				throw new ValidationException("Ikke nok ledige pladser.");
+			}
 
 			try
 			{
-				return _bookingRepository.Create(booking);
+				var bookingId = _bookingRepository.Create(booking);
+
+				_logger.LogInformation(
+					"Booking {BookingId} created successfully for RejseId {RejseId}",
+					bookingId,
+					booking.RejseId);
+
+				return bookingId;
 			}
 			catch
 			{
+				_logger.LogWarning(
+					"Booking create failed after seat reservation for RejseId {RejseId}. Releasing seats.",
+					booking.RejseId);
+
 				_rejseRepository.ReleaseSeats(booking.RejseId, booking.AntalPladser);
 				throw;
 			}
@@ -111,6 +136,8 @@ namespace BusRejserLibrary.Services
 
 		public bool Cancel(int bookingId, int? actingUserId, bool isStaff)
 		{
+			_logger.LogInformation("Cancelling booking {BookingId}", bookingId);
+
 			var booking = _bookingRepository.GetById(bookingId);
 			if (booking == null)
 				throw new NotFoundException("Booking blev ikke fundet.");
@@ -127,25 +154,44 @@ namespace BusRejserLibrary.Services
 					throw new ValidationException("Ugyldig bruger.");
 
 				if (booking.UserId != actingUserId.Value)
+				{
+					_logger.LogWarning(
+						"User {UserId} tried to cancel booking {BookingId} without permission",
+						actingUserId,
+						bookingId);
+
 					throw new ForbiddenException("Du må kun annullere dine egne bookinger.");
+				}
 
 				var rejse = _rejseRepository.GetById(booking.RejseId);
 				if (rejse == null)
 					throw new NotFoundException("Rejse findes ikke.");
 
 				if (rejse.StartAt <= DateTime.UtcNow.AddHours(24))
+				{
+					_logger.LogWarning(
+						"Cancel denied for booking {BookingId} because departure is within 24 hours",
+						bookingId);
+
 					throw new ValidationException("Booking kan kun annulleres senest 24 timer før afgang.");
+				}
 			}
 
 			var cancelled = _bookingRepository.CancelAndReleaseSeats(bookingId);
 			if (!cancelled)
+			{
+				_logger.LogWarning("Cancel failed for booking {BookingId}", bookingId);
 				throw new ConflictException("Booking kunne ikke annulleres.");
+			}
 
+			_logger.LogInformation("Booking {BookingId} cancelled successfully", bookingId);
 			return true;
 		}
 
 		public bool Reactivate(int bookingId)
 		{
+			_logger.LogInformation("Reactivating booking {BookingId}", bookingId);
+
 			var booking = _bookingRepository.GetById(bookingId);
 			if (booking == null)
 				throw new NotFoundException("Booking blev ikke fundet.");
@@ -158,8 +204,12 @@ namespace BusRejserLibrary.Services
 
 			var reactivated = _bookingRepository.ReactivateAndReserveSeats(bookingId);
 			if (!reactivated)
+			{
+				_logger.LogWarning("Reactivate failed for booking {BookingId}", bookingId);
 				throw new ConflictException("Booking kunne ikke genaktiveres.");
+			}
 
+			_logger.LogInformation("Booking {BookingId} reactivated successfully", bookingId);
 			return true;
 		}
 
@@ -167,7 +217,13 @@ namespace BusRejserLibrary.Services
 		{
 			var existing = _bookingRepository.GetByStripeSessionId(request.StripeSessionId);
 			if (existing != null)
+			{
+				_logger.LogInformation(
+					"Stripe booking ignored - already exists for session {SessionId}",
+					request.StripeSessionId);
+
 				return;
+			}
 
 			var booking = Booking.Create(
 				request.RejseId,
@@ -182,7 +238,5 @@ namespace BusRejserLibrary.Services
 
 			Create(booking);
 		}
-
-
 	}
 }

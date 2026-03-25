@@ -199,7 +199,7 @@ public class BookingServiceTests
 		);
 
 		bookingRepo.Setup(x => x.GetById(1)).Returns(booking);
-		bookingRepo.Setup(x => x.ReactivateAndReserveSeats(1)).Returns(true);
+		bookingRepo.Setup(x => x.ReactivateAndReserveSeats(1)).Returns(true); 
 
 		var service = new BookingService(
 			bookingRepo.Object,
