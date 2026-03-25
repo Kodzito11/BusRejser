@@ -7,8 +7,17 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json.Serialization;
+using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+	.ReadFrom.Configuration(builder.Configuration)
+	.Enrich.FromLogContext()
+	.CreateLogger();
+
+builder.Host.UseSerilog();
 
 builder.Services.AddControllers();
 
@@ -97,6 +106,26 @@ builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<StripeService>();
 
 var app = builder.Build();
+
+app.UseSerilogRequestLogging(options =>
+{
+	options.MessageTemplate =
+		"HTTP {RequestMethod} {RequestPath} ? {StatusCode} in {Elapsed:0.0000} ms";
+
+	options.EnrichDiagnosticContext = (ctx, http) =>
+	{
+		ctx.Set("Host", http.Request.Host.Value);
+		ctx.Set("UserAgent", http.Request.Headers.UserAgent.ToString());
+
+		if (http.Items.TryGetValue("CorrelationId", out var cid))
+		{
+			ctx.Set("CorrelationId", cid);
+		}
+	};
+});
+
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 
 if (app.Environment.IsDevelopment())

@@ -12,15 +12,18 @@ namespace BusRejserLibrary.Services
 		private readonly BookingRepository _bookingRepository;
 		private readonly RejseRepository _rejseRepository;
 		private readonly UserRepository _userRepository;
+		private readonly ILogger<BookingService> _logger;
 
 		public BookingService(
 			BookingRepository bookingRepository,
 			RejseRepository rejseRepository,
-			UserRepository userRepository)
+			UserRepository userRepository,
+			ILogger<BookingService> logger)
 		{
 			_bookingRepository = bookingRepository;
 			_rejseRepository = rejseRepository;
 			_userRepository = userRepository;
+			_logger = logger;
 		}
 
 		public List<BookingResponse> GetAllResponses()
@@ -179,5 +182,7 @@ namespace BusRejserLibrary.Services
 
 			Create(booking);
 		}
+
+
 	}
 }

@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusRejser", "BusRejser\BusR
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusRejserLibrary", "BusRejserLibrary\BusRejserLibrary.csproj", "{A816EFB5-7007-4BE0-8827-3571F85403F9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusPlanen.Tests", "BusPlanen.Tests\BusPlanen.Tests.csproj", "{061A2D05-7840-44D2-B583-8031C9BAF720}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{A816EFB5-7007-4BE0-8827-3571F85403F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A816EFB5-7007-4BE0-8827-3571F85403F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A816EFB5-7007-4BE0-8827-3571F85403F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{061A2D05-7840-44D2-B583-8031C9BAF720}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{061A2D05-7840-44D2-B583-8031C9BAF720}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{061A2D05-7840-44D2-B583-8031C9BAF720}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{061A2D05-7840-44D2-B583-8031C9BAF720}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
