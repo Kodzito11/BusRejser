@@ -43,12 +43,28 @@ namespace BusRejser.Controllers
 		[AllowAnonymous]
 		public async Task<IActionResult> Webhook()
 		{
-			var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-			var stripeSignature = Request.Headers["Stripe-Signature"].ToString();
+			try
+			{
+				var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+				var stripeSignature = Request.Headers["Stripe-Signature"].ToString();
 
-			_stripeService.HandleWebhook(json, stripeSignature);
+				Console.WriteLine("WEBHOOK HIT");
+				Console.WriteLine($"Signature present: {!string.IsNullOrWhiteSpace(stripeSignature)}");
+				Console.WriteLine($"Body length: {json.Length}");
 
-			return Ok();
+				_stripeService.HandleWebhook(json, stripeSignature);
+
+				Console.WriteLine("WEBHOOK OK");
+				return Ok();
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("WEBHOOK ERROR:");
+				Console.WriteLine(ex.Message);
+				Console.WriteLine(ex.ToString());
+
+				return StatusCode(500, ex.Message);
+			}
 		}
 	}
 }

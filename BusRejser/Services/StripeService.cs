@@ -93,14 +93,22 @@ namespace BusRejser.Services
 		public void HandleWebhook(string json, string stripeSignature)
 		{
 			var webhookSecret = _configuration["Stripe:WebhookSecret"];
+
+			Console.WriteLine($"Webhook secret exists: {!string.IsNullOrWhiteSpace(webhookSecret)}");
+			Console.WriteLine($"Webhook secret starts with whsec: {webhookSecret?.StartsWith("whsec_")}");
+			Console.WriteLine($"Stripe signature exists: {!string.IsNullOrWhiteSpace(stripeSignature)}");
+
 			if (string.IsNullOrWhiteSpace(webhookSecret))
 				throw new ValidationException("Stripe webhook secret mangler.");
 
 			var stripeEvent = EventUtility.ConstructEvent(
 				json,
 				stripeSignature,
-				webhookSecret
+				webhookSecret,
+				throwOnApiVersionMismatch: false
 			);
+
+			Console.WriteLine($"Event type: {stripeEvent.Type}");
 
 			if (stripeEvent.Type != EventTypes.CheckoutSessionCompleted)
 				return;
