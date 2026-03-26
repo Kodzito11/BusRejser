@@ -5,9 +5,8 @@ using BusRejserLibrary.Repositories;
 using BusRejserLibrary.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Serilog;
-using Serilog.Events;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,8 +18,8 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(options =>
 {
 	options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -44,7 +43,7 @@ builder.Services.AddSwaggerGen(options =>
 					Id = "Bearer"
 				}
 			},
-			new string[] {}
+			Array.Empty<string>()
 		}
 	});
 });
@@ -55,7 +54,11 @@ if (string.IsNullOrWhiteSpace(connStr))
 
 var jwtSecret = builder.Configuration["Jwt:Secret"];
 if (string.IsNullOrWhiteSpace(jwtSecret))
-	throw new Exception("Jwt:Secret mangler i appsettings.json.");
+	throw new Exception("Jwt:Secret mangler.");
+
+var stripeSecret = builder.Configuration["Stripe:SecretKey"];
+if (string.IsNullOrWhiteSpace(stripeSecret))
+	throw new Exception("Stripe:SecretKey mangler.");
 
 builder.Services.AddSingleton(new DBConnection(connStr));
 
@@ -68,7 +71,7 @@ builder.Services.AddCors(options =>
 		 .AllowAnyMethod());
 });
 
-// JWT Authentication
+// JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 	.AddJwtBearer(options =>
 	{
@@ -92,10 +95,6 @@ builder.Services.AddScoped<BookingRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IRejseRepository, RejseRepository>();
 builder.Services.AddScoped<IUserRepository>(_ => new UserRepository(connStr));
-
-var stripeSecret = builder.Configuration["Stripe:SecretKey"];
-if (string.IsNullOrWhiteSpace(stripeSecret))
-	throw new Exception("Stripe:SecretKey mangler i appsettings.json.");
 
 // Services
 builder.Services.AddScoped<BusService>();
@@ -129,7 +128,6 @@ app.UseSerilogRequestLogging(options =>
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
 
-
 if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
@@ -137,7 +135,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("dev");
-
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
