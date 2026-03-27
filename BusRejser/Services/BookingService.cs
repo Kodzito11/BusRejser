@@ -213,6 +213,18 @@ namespace BusRejserLibrary.Services
 			return true;
 		}
 
+		public BookingResponse? GetByStripeSessionId(string stripeSessionId)
+		{
+			if (string.IsNullOrWhiteSpace(stripeSessionId))
+				return null;
+
+			var booking = _bookingRepository.GetByStripeSessionId(stripeSessionId);
+			if (booking == null)
+				return null;
+
+			return ToResponse(booking);
+		}
+
 		public void CreateFromStripe(StripeWebhookBookingRequest request)
 		{
 			var existing = _bookingRepository.GetByStripeSessionId(request.StripeSessionId);

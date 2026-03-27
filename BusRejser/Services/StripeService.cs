@@ -126,6 +126,36 @@ namespace BusRejser.Services
 			_bookingService.CreateFromStripe(request);
 		}
 
+		public CheckoutStatusResponse GetCheckoutStatus(string sessionId)
+		{
+			if (string.IsNullOrWhiteSpace(sessionId))
+				throw new ValidationException("Session id mangler.");
+
+			var sessionService = new SessionService();
+			var session = sessionService.Get(sessionId);
+
+			if (session == null)
+				throw new NotFoundException("Stripe session blev ikke fundet.");
+
+			var booking = _bookingService.GetByStripeSessionId(sessionId);
+
+			var isPaid = session.PaymentStatus == "paid";
+
+			return new CheckoutStatusResponse
+			{
+				SessionId = session.Id,
+				IsPaid = isPaid,
+				BookingExists = booking != null,
+				Status = booking != null
+					? "booking_created"
+					: isPaid
+						? "processing"
+						: "unpaid",
+				BookingId = booking?.BookingId,
+				BookingReference = booking?.BookingReference
+			};
+		}
+
 		private StripeWebhookBookingRequest BuildWebhookBookingRequest(Session session)
 		{
 			if (string.IsNullOrWhiteSpace(session.Id))

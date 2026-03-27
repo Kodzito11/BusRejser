@@ -66,5 +66,15 @@ namespace BusRejser.Controllers
 				return StatusCode(500, ex.Message);
 			}
 		}
+
+		[HttpGet("checkout-status")]
+		[AllowAnonymous]
+		public ActionResult<CheckoutStatusResponse> GetCheckoutStatus([FromQuery] string sessionId)
+		{
+			var result = _stripeService.GetCheckoutStatus(sessionId);
+			return Ok(result);
+		}
+
+
 	}
 }
