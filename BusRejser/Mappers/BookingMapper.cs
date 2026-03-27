@@ -19,6 +19,8 @@ namespace BusRejser.Mappers
 				CreatedAt = booking.CreatedAt,
 				Status = (int)booking.Status,
 				BookingReference = booking.BookingReference,
+				StripeSessionId = booking.StripeSessionId,
+				StripePaymentIntentId = booking.StripePaymentIntentId,
 				TotalPrice = booking.TotalPrice,
 				PaidAt = booking.PaidAt
 			};

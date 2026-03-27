@@ -21,7 +21,12 @@ namespace BusRejser.DTOs
 
 		public string BookingReference { get; set; } = "";
 
+		public string? StripeSessionId { get; set; }
+
+		public string? StripePaymentIntentId { get; set; }
+
 		public decimal TotalPrice { get; set; }
+
 		public DateTime? PaidAt { get; set; }
 	}
 }
