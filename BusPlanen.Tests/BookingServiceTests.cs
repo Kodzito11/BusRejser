@@ -1,4 +1,5 @@
-﻿using BusRejser.Exceptions;
+﻿using BusRejser.DTOs;
+using BusRejser.Exceptions;
 using BusRejserLibrary.Enums;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
@@ -428,5 +429,86 @@ public class BookingServiceTests
 
 		bookingRepo.Verify(x => x.GetById(1), Times.Once);
 		bookingRepo.Verify(x => x.ReactivateAndReserveSeats(1), Times.Once);
+	}
+
+	[Fact]
+	public void CreateFromStripe_CreatesBooking_WhenSessionDoesNotExist()
+	{
+		var bookingRepo = new Mock<IBookingRepository>();
+		var rejseRepo = new Mock<IRejseRepository>();
+		var userRepo = new Mock<IUserRepository>();
+		var logger = new Mock<ILogger<BookingService>>();
+
+		var request = new StripeWebhookBookingRequest
+		{
+			RejseId = 1,
+			AntalPladser = 2,
+			KundeNavn = "Test",
+			KundeEmail = "test@test.dk",
+			StripeSessionId = "sess_123",
+			StripePaymentIntentId = "pi_123",
+			TotalPrice = 200m
+		};
+
+		var rejse = CreateValidRejse(1);
+		rejseRepo.Setup(x => x.GetById(1)).Returns(rejse);
+		rejseRepo.Setup(x => x.TryReserveSeats(1, 2)).Returns(true);
+		bookingRepo.Setup(x => x.Create(It.IsAny<Booking>())).Returns(1);
+
+		var service = CreateService(bookingRepo, rejseRepo, userRepo, logger);
+
+		// Act
+		service.CreateFromStripe(request);
+
+		// Assert
+		bookingRepo.Verify(x => x.Create(It.IsAny<Booking>()), Times.Once);
+	}
+
+	[Fact]
+	public void CreateFromStripe_DoesNothing_WhenSessionAlreadyExists()
+	{
+		var bookingRepo = new Mock<IBookingRepository>();
+		var rejseRepo = new Mock<IRejseRepository>();
+		var userRepo = new Mock<IUserRepository>();
+		var logger = new Mock<ILogger<BookingService>>();
+
+		var existingBooking = CreatePaidBooking();
+		bookingRepo
+			.Setup(x => x.GetByStripeSessionId("sess_123"))
+			.Returns(existingBooking);
+
+		var service = CreateService(bookingRepo, rejseRepo, userRepo, logger);
+
+		var request = new StripeWebhookBookingRequest
+		{
+			RejseId = 1,
+			AntalPladser = 2,
+			KundeNavn = "Test",
+			KundeEmail = "test@test.dk",
+			StripeSessionId = "sess_123",
+			StripePaymentIntentId = "pi_123",
+			TotalPrice = 200m
+		};
+
+		// Act
+		service.CreateFromStripe(request);
+
+		// Assert
+		bookingRepo.Verify(x => x.Create(It.IsAny<Booking>()), Times.Never);
+	}
+
+	[Fact]
+	public void GetByStripeSessionId_ReturnsNull_WhenSessionIdIsEmpty()
+	{
+		var bookingRepo = new Mock<IBookingRepository>();
+		var rejseRepo = new Mock<IRejseRepository>();
+		var userRepo = new Mock<IUserRepository>();
+		var logger = new Mock<ILogger<BookingService>>();
+
+		var service = CreateService(bookingRepo, rejseRepo, userRepo, logger);
+
+		var result = service.GetByStripeSessionId("");
+
+		Assert.Null(result);
 	}
 }

@@ -86,7 +86,15 @@ namespace BusRejserLibrary.Services
 			}
 
 			if (booking.Status != BookingStatus.Paid)
+			{
+				_logger.LogWarning(
+					"Booking create failed because booking for RejseId {RejseId} was not paid. Status {Status}",
+					booking.RejseId,
+					booking.Status
+				);
+
 				throw new ValidationException("Kun betalte bookinger kan oprettes.");
+			}
 
 			_logger.LogInformation(
 				"Creating booking for RejseId {RejseId} with {Seats} seats",
@@ -114,9 +122,10 @@ namespace BusRejserLibrary.Services
 
 				return bookingId;
 			}
-			catch
+			catch (Exception ex)
 			{
 				_logger.LogWarning(
+					ex,
 					"Booking create failed after seat reservation for RejseId {RejseId}. Releasing seats.",
 					booking.RejseId);
 
@@ -216,23 +225,53 @@ namespace BusRejserLibrary.Services
 		public BookingResponse? GetByStripeSessionId(string stripeSessionId)
 		{
 			if (string.IsNullOrWhiteSpace(stripeSessionId))
+			{
+				_logger.LogWarning("GetByStripeSessionId called with empty session id");
 				return null;
+			}
 
 			var booking = _bookingRepository.GetByStripeSessionId(stripeSessionId);
 			if (booking == null)
+			{
+				_logger.LogInformation(
+					"No booking found for Stripe session {SessionId}",
+					stripeSessionId
+				);
 				return null;
+			}
+
+			_logger.LogInformation(
+				"Booking found for Stripe session {SessionId}. BookingId {BookingId}",
+				stripeSessionId,
+				booking.BookingId
+			);
 
 			return ToResponse(booking);
 		}
 
 		public void CreateFromStripe(StripeWebhookBookingRequest request)
 		{
+			if (request == null)
+			{
+				_logger.LogWarning("CreateFromStripe called with null request");
+				throw new ValidationException("Stripe request må ikke være null.");
+			}
+
+			_logger.LogInformation(
+				"CreateFromStripe started for SessionId {SessionId}, RejseId {RejseId}, Seats {Seats}",
+				request.StripeSessionId,
+				request.RejseId,
+				request.AntalPladser
+			);
+
 			var existing = _bookingRepository.GetByStripeSessionId(request.StripeSessionId);
 			if (existing != null)
 			{
 				_logger.LogInformation(
-					"Stripe booking ignored - already exists for session {SessionId}",
-					request.StripeSessionId);
+					"Stripe booking ignored - already exists for session {SessionId} with BookingId {BookingId}",
+					request.StripeSessionId,
+					existing.BookingId
+				);
 
 				return;
 			}
@@ -248,7 +287,17 @@ namespace BusRejserLibrary.Services
 
 			booking.MarkAsPaid(request.StripeSessionId, request.StripePaymentIntentId);
 
+			_logger.LogInformation(
+				"Booking marked as paid for Stripe session {SessionId}. Creating booking in repository flow",
+				request.StripeSessionId
+			);
+
 			Create(booking);
+
+			_logger.LogInformation(
+				"CreateFromStripe completed successfully for SessionId {SessionId}",
+				request.StripeSessionId
+			);
 		}
 	}
 }
