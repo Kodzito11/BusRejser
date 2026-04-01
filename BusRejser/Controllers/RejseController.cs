@@ -44,14 +44,19 @@ namespace BusRejser.Controllers
 		public ActionResult<int> Create([FromBody] RejseCreateRequest request)
 		{
 			var rejse = Rejse.Create(
-				request.Title,
-				request.Destination,
-				request.StartAt,
-				request.EndAt,
-				request.Price,
-				request.MaxSeats,
-				request.BusId
-			);
+			request.Title,
+			request.Destination,
+			request.StartAt,
+			request.EndAt,
+			request.Price,
+			request.MaxSeats,
+			request.BusId,
+			request.ShortDescription,
+			request.Description,
+			request.ImageUrl,
+			request.IsFeatured,
+			request.IsPublished
+		);
 
 			var id = _service.Create(rejse);
 			return Ok(id);
@@ -76,7 +81,12 @@ namespace BusRejser.Controllers
 				request.EndAt,
 				request.Price,
 				request.MaxSeats,
-				request.BusId
+				request.BusId,
+				request.ShortDescription,
+				request.Description,
+				request.ImageUrl,
+				request.IsFeatured,
+				request.IsPublished
 			);
 
 			_service.Update(id, rejse);

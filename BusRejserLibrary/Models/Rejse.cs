@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace BusRejserLibrary.Models
+﻿namespace BusRejserLibrary.Models
 {
 	public class Rejse
 	{
@@ -18,7 +12,25 @@ namespace BusRejserLibrary.Models
 		public int? BusId { get; set; }
 		public int BookedSeats { get; set; }
 
-		private Rejse(string title, string destination, DateTime startAt, DateTime endAt, decimal price, int maxSeats, int? busId)
+		public string? ShortDescription { get; set; }
+		public string? Description { get; set; }
+		public string? ImageUrl { get; set; }
+		public bool IsFeatured { get; set; }
+		public bool IsPublished { get; set; }
+
+		private Rejse(
+			string title,
+			string destination,
+			DateTime startAt,
+			DateTime endAt,
+			decimal price,
+			int maxSeats,
+			int? busId,
+			string? shortDescription,
+			string? description,
+			string? imageUrl,
+			bool isFeatured,
+			bool isPublished)
 		{
 			Title = title;
 			Destination = destination;
@@ -28,17 +40,60 @@ namespace BusRejserLibrary.Models
 			MaxSeats = maxSeats;
 			BusId = busId;
 			BookedSeats = 0;
+
+			ShortDescription = shortDescription;
+			Description = description;
+			ImageUrl = imageUrl;
+			IsFeatured = isFeatured;
+			IsPublished = isPublished;
 		}
 
-		public static Rejse Create(string title, string destination, DateTime startAt, DateTime endAt, decimal price, int maxSeats, int? busId)
+		public static Rejse Create(
+			string title,
+			string destination,
+			DateTime startAt,
+			DateTime endAt,
+			decimal price,
+			int maxSeats,
+			int? busId,
+			string? shortDescription,
+			string? description,
+			string? imageUrl,
+			bool isFeatured,
+			bool isPublished)
 		{
-			if (string.IsNullOrWhiteSpace(title)) throw new ArgumentException("Title kræves.");
-			if (string.IsNullOrWhiteSpace(destination)) throw new ArgumentException("Destination kræves.");
-			if (endAt < startAt) throw new ArgumentException("EndAt kan ikke være før StartAt.");
-			if (price < 0) throw new ArgumentOutOfRangeException(nameof(price));
-			if (maxSeats < 0) throw new ArgumentOutOfRangeException(nameof(maxSeats));
+			if (string.IsNullOrWhiteSpace(title))
+				throw new ArgumentException("Title kræves.");
 
-			return new Rejse(title, destination, startAt, endAt, price, maxSeats, busId);
+			if (string.IsNullOrWhiteSpace(destination))
+				throw new ArgumentException("Destination kræves.");
+
+			if (endAt < startAt)
+				throw new ArgumentException("EndAt kan ikke være før StartAt.");
+
+			if (price < 0)
+				throw new ArgumentOutOfRangeException(nameof(price));
+
+			if (maxSeats < 0)
+				throw new ArgumentOutOfRangeException(nameof(maxSeats));
+
+			if (!string.IsNullOrWhiteSpace(shortDescription) && shortDescription.Length > 300)
+				throw new ArgumentException("ShortDescription må max være 300 tegn.");
+
+			return new Rejse(
+				title.Trim(),
+				destination.Trim(),
+				startAt,
+				endAt,
+				price,
+				maxSeats,
+				busId,
+				string.IsNullOrWhiteSpace(shortDescription) ? null : shortDescription.Trim(),
+				string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
+				string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim(),
+				isFeatured,
+				isPublished
+			);
 		}
 	}
 }

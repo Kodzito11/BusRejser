@@ -17,7 +17,12 @@ namespace BusRejser.Mappers
 				Price = r.Price,
 				MaxSeats = r.MaxSeats,
 				BookedSeats = r.BookedSeats,
-				BusId = r.BusId
+				BusId = r.BusId,
+				ShortDescription = r.ShortDescription,
+				Description = r.Description,
+				ImageUrl = r.ImageUrl,
+				IsFeatured = r.IsFeatured,
+				IsPublished = r.IsPublished
 			};
 		}
 	}
