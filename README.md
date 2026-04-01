@@ -1,53 +1,116 @@
-# BusRejser API
+# 🚌 BusPlanen Backend (API)
 
-Backend for bus booking system (Rejser, Booking, Stripe betaling).
+Backend API for BusPlanen – håndterer rejser, booking, brugere og Stripe betaling.
 
 ---
 
-## 🚀 Run locally
+## ✨ Features
 
-### 1. Requirements
+- REST API for:
+  - Rejser
+  - Booking
+  - Brugere
+  - Busser
+- JWT authentication (roller)
+- Stripe checkout + webhook integration
+- Seat reservation (ingen overselling)
+- Global exception handling
+- Structured logging (Serilog)
+- Correlation ID pr request
+- Unit tests for BookingService
+
+---
+
+## 🧠 Arkitektur
+
+```
+
+Controller → Service → Repository → Database
+
+```
+
+- Services indeholder business logic
+- Repositories håndterer database
+- Controllers er tynde
+
+---
+
+## 🔐 Auth
+
+JWT baseret auth med roller:
+
+- Admin
+- Medarbejder
+- Kunde
+
+---
+
+## 💳 Booking flow
+
+```
+
+Frontend → Stripe Checkout → Webhook → BookingService → DB
+
+```
+
+- Booking oprettes kun efter verificeret betaling
+- Webhook er idempotent (ingen dubletter)
+- Seats reserveres før booking
+- Rollback hvis noget fejler
+
+---
+
+## 🧪 API endpoints (uddrag)
+
+```
+
+GET    /api/rejse
+GET    /api/rejse/{id}
+POST   /api/rejse        (Admin/Medarbejder)
+
+GET    /api/booking/mine
+GET    /api/booking/rejse/{id}
+PUT    /api/booking/{id}/cancel
+PUT    /api/booking/{id}/reactivate
+
+POST   /api/stripe/create-checkout-session
+POST   /api/stripe/webhook
+
+```
+
+---
+
+## 🚀 Kør projektet lokalt
+
+### Requirements
+
 - .NET 8
 - MySQL
-- Stripe account (test keys)
+- Stripe test keys
 
 ---
 
-### 2. Environment variables
+### Environment variables
 
-Set environment variables:
+```
 
-```bash
 ASPNETCORE_ENVIRONMENT=Development
 
-DB_CONNECTION_STRING=your_connection_string_here
-JWT_SECRET=your_jwt_secret_here
+DB_CONNECTION_STRING=your_connection_string
+JWT_SECRET=your_jwt_secret
 
-STRIPE_SECRET_KEY=your_stripe_secret_key
-STRIPE_WEBHOOK_SECRET=your_webhook_secret
+STRIPE_SECRET_KEY=your_key
+STRIPE_WEBHOOK_SECRET=your_secret
+
 ````
 
 ---
 
-### 3. Database
-
-* Ensure MySQL database exists
-* Apply schema / migrations
-* Connection string must match database
-
----
-
-### 4. Run project
+### Run
 
 ```bash
 dotnet run
-```
-
-API runs on:
-
-```
-https://localhost:xxxx
-```
+````
 
 Swagger:
 
@@ -57,92 +120,38 @@ Swagger:
 
 ---
 
-## 🔐 Auth
+## 🧪 Tests
 
-* JWT based authentication
-* Roles:
+* Unit tests for BookingService
+* Dækker:
 
-  * Admin
-  * Medarbejder
-  * Kunde
-
----
-
-## 💳 Booking & Stripe flow
-
-```
-Frontend → Stripe Checkout → Webhook → BookingService → DB
-```
-
-* Booking oprettes kun ved verificeret betaling
-* Webhook er idempotent (samme event → ingen dubletter)
-* Seat reservation håndteres i service layer
-
----
-
-## 🧪 Key endpoints
-
-```
-POST   /api/booking
-PUT    /api/booking/{id}/cancel
-PUT    /api/booking/{id}/reactivate
-GET    /api/booking/mine
-GET    /api/booking/rejse/{id}
-```
-
----
-
-## 🧠 System notes
-
-* Clean architecture:
-
-  ```
-  Controller → Service → Repository → DB
-  ```
-* Global exception handling
-* Structured logging + correlation id
-* Seat reservation er konsistent (ingen overselling)
-* Rollback ved fejl i booking flow
-
----
-
-## 🛠️ Deployment (short)
-
-Required environment variables:
-
-```
-DB_CONNECTION_STRING
-JWT_SECRET
-STRIPE_SECRET_KEY
-STRIPE_WEBHOOK_SECRET
-```
-
-Before production:
-
-* CORS skal være låst til frontend domain
-* Secrets må ikke være i repo
-* Production environment skal være sat korrekt
-
----
-
-## 🧪 Smoke test (after deploy)
-
-Minimum test:
-
-1. Login virker
-2. Hent rejser virker
-3. Opret booking virker
-4. Cancel booking virker
-5. Reactivate booking virker
-6. Stripe webhook virker
-7. Admin endpoints virker korrekt
-8. Frontend kan ramme API
+  * seat reservation
+  * rollback
+  * cancel/reactivate
+  * Stripe webhook cases
 
 ---
 
 ## 📌 Status
 
 * Booking flow implementeret og testet
+* Stripe integration virker
 * Logging + middleware på plads
 * Exception handling centraliseret
-* Unit tests for BookingService (inkl. edge cases)
+
+---
+
+## 🧱 Næste skridt
+
+* Flere tests (Auth + Rejse)
+* Deployment setup
+* Production config (CORS + env)
+
+---
+
+## ⚠️ Note
+
+Kører pt. i development.
+Production setup kommer senere.
+
+```
