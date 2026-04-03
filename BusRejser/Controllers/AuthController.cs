@@ -37,5 +37,19 @@ namespace BusRejser.Controllers
 				token
 			});
 		}
+
+		[HttpPost("forgot-password")]
+		public IActionResult ForgotPassword([FromBody] ForgotPasswordRequest request)
+		{
+			_authService.ForgotPassword(request.Email);
+			return Ok(new { message = "Hvis email findes, er link sendt." });
+		}
+
+		[HttpPost("reset-password")]
+		public IActionResult ResetPassword([FromBody] ResetPasswordRequest request)
+		{
+			_authService.ResetPassword(request.Token, request.NewPassword);
+			return Ok(new { message = "Password opdateret." });
+		}
 	}
 }

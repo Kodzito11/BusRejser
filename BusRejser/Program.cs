@@ -95,6 +95,7 @@ builder.Services.AddScoped<BookingRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IRejseRepository, RejseRepository>();
 builder.Services.AddScoped<IUserRepository>(_ => new UserRepository(connStr));
+builder.Services.AddScoped<PasswordResetTokenRepository>(sp => new PasswordResetTokenRepository(connStr));
 
 // Services
 builder.Services.AddScoped<BusService>();
