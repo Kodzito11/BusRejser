@@ -1,10 +1,5 @@
 ﻿using BusRejserLibrary.Models;
 using MySqlConnector;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BusRejserLibrary.Repositories
 {
@@ -24,10 +19,10 @@ namespace BusRejserLibrary.Repositories
 
 			var cmd = conn.CreateCommand();
 			cmd.CommandText = @"
-            INSERT INTO PasswordResetTokens 
-            (UserId, TokenHash, ExpiresAt, CreatedAt)
-            VALUES (@userId, @hash, @expiresAt, @createdAt)
-        ";
+				INSERT INTO password_reset_tokens
+				(UserId, TokenHash, ExpiresAt, CreatedAt)
+				VALUES (@userId, @hash, @expiresAt, @createdAt)
+			";
 
 			cmd.Parameters.AddWithValue("@userId", token.UserId);
 			cmd.Parameters.AddWithValue("@hash", token.TokenHash);
@@ -44,11 +39,11 @@ namespace BusRejserLibrary.Repositories
 
 			var cmd = conn.CreateCommand();
 			cmd.CommandText = @"
-            SELECT * FROM PasswordResetTokens
-            WHERE TokenHash = @hash
-              AND UsedAt IS NULL
-            LIMIT 1
-        ";
+				SELECT * FROM password_reset_tokens
+				WHERE TokenHash = @hash
+				  AND UsedAt IS NULL
+				LIMIT 1
+			";
 
 			cmd.Parameters.AddWithValue("@hash", hash);
 
@@ -75,10 +70,10 @@ namespace BusRejserLibrary.Repositories
 
 			var cmd = conn.CreateCommand();
 			cmd.CommandText = @"
-            UPDATE PasswordResetTokens
-            SET UsedAt = @usedAt
-            WHERE Id = @id
-        ";
+				UPDATE password_reset_tokens
+				SET UsedAt = @usedAt
+				WHERE Id = @id
+			";
 
 			cmd.Parameters.AddWithValue("@usedAt", DateTime.UtcNow);
 			cmd.Parameters.AddWithValue("@id", id);
@@ -93,11 +88,11 @@ namespace BusRejserLibrary.Repositories
 
 			var cmd = conn.CreateCommand();
 			cmd.CommandText = @"
-            UPDATE PasswordResetTokens
-            SET UsedAt = @usedAt
-            WHERE UserId = @userId
-              AND UsedAt IS NULL
-        ";
+				UPDATE password_reset_tokens
+				SET UsedAt = @usedAt
+				WHERE UserId = @userId
+				  AND UsedAt IS NULL
+			";
 
 			cmd.Parameters.AddWithValue("@usedAt", DateTime.UtcNow);
 			cmd.Parameters.AddWithValue("@userId", userId);

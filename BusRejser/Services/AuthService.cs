@@ -10,17 +10,20 @@ namespace BusRejser.Services
 		private readonly PasswordService _passwordService;
 		private readonly JwtService _jwtService;
 		private readonly PasswordResetTokenRepository _passwordResetTokenRepository;
+		private readonly EmailService _emailService;
 
 		public AuthService(
 			UserRepository userRepository,
 			PasswordService passwordService,
 			JwtService jwtService,
-			PasswordResetTokenRepository passwordResetTokenRepository)
+			PasswordResetTokenRepository passwordResetTokenRepository,
+			EmailService emailService)
 		{
 			_userRepository = userRepository;
 			_passwordService = passwordService;
 			_jwtService = jwtService;
 			_passwordResetTokenRepository = passwordResetTokenRepository;
+			_emailService = emailService;
 		}
 
 		public int Register(string username, string email, string password)
@@ -60,11 +63,12 @@ namespace BusRejser.Services
 			return _jwtService.GenerateToken(user);
 		}
 
-		public void ForgotPassword(string email)
+		public async Task ForgotPassword(string email)
 		{
 			var user = _userRepository.GetByEmail(email);
 
-			if (user == null) return;
+			if (user == null)
+				return;
 
 			_passwordResetTokenRepository.InvalidateAllForUser(user.Id);
 
@@ -81,7 +85,21 @@ namespace BusRejser.Services
 
 			_passwordResetTokenRepository.Create(token);
 
-			Console.WriteLine($"RESET LINK: https://localhost:5173/reset-password?token={rawToken}");
+			try
+			{
+				await _emailService.SendAsync(
+					user.Email,
+					"Nulstil password",
+					$"http://localhost:5173/reset-password?token={rawToken}"
+				);
+
+				Console.WriteLine("MAIL SENDT OK");
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("MAIL FEJL: " + ex.Message);
+				throw;
+			}
 		}
 
 		public void ResetPassword(string token, string newPassword)
@@ -102,7 +120,6 @@ namespace BusRejser.Services
 			user.PasswordHash = _passwordService.HashPassword(newPassword);
 
 			_userRepository.Update(user);
-
 			_passwordResetTokenRepository.MarkAsUsed(resetToken.Id);
 		}
 	}

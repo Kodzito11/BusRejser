@@ -106,6 +106,7 @@ builder.Services.AddScoped(_ => new JwtService(jwtSecret));
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<StripeService>();
+builder.Services.AddScoped<EmailService>();
 
 var app = builder.Build();
 

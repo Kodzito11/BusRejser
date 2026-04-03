@@ -39,9 +39,9 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpPost("forgot-password")]
-		public IActionResult ForgotPassword([FromBody] ForgotPasswordRequest request)
+		public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
 		{
-			_authService.ForgotPassword(request.Email);
+			await _authService.ForgotPassword(request.Email);
 			return Ok(new { message = "Hvis email findes, er link sendt." });
 		}
 
