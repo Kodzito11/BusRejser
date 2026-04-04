@@ -61,8 +61,6 @@ var stripeSecret = builder.Configuration["Stripe:SecretKey"];
 if (string.IsNullOrWhiteSpace(stripeSecret))
 	throw new Exception("Stripe:SecretKey mangler.");
 
-builder.Services.AddSingleton(new DBConnection(connStr));
-
 // CORS
 builder.Services.AddCors(options =>
 {
