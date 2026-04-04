@@ -1,5 +1,6 @@
 ﻿using BusRejserLibrary.Database;
 using BusRejserLibrary.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace BusRejserLibrary.Repositories
 {
@@ -25,12 +26,16 @@ namespace BusRejserLibrary.Repositories
 
 		public Facilitet? GetById(int id)
 		{
-			return _context.Faciliteter.FirstOrDefault(x => x.Id == id);
+			return _context.Faciliteter
+				.AsNoTracking()
+				.FirstOrDefault(x => x.Id == id);
 		}
 
 		public List<Facilitet> GetAll()
 		{
-			return _context.Faciliteter.ToList();
+			return _context.Faciliteter
+				.AsNoTracking()
+				.ToList();
 		}
 
 		public bool Update(Facilitet facilitet)

@@ -15,6 +15,7 @@ namespace BusRejserLibrary.Repositories
 		public List<int> GetFacilitetIdsForBus(int busId)
 		{
 			var bus = _context.Buses
+				.AsNoTracking()
 				.Include(x => x.Faceliteter)
 				.FirstOrDefault(x => x.busId == busId);
 

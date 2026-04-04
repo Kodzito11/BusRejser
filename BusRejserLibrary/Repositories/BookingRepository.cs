@@ -28,6 +28,7 @@ namespace BusRejserLibrary.Repositories
 		public List<Booking> GetAll()
 		{
 			return _context.Bookings
+				.AsNoTracking()
 				.OrderByDescending(x => x.BookingId)
 				.ToList();
 		}
@@ -35,18 +36,21 @@ namespace BusRejserLibrary.Repositories
 		public Booking? GetById(int id)
 		{
 			return _context.Bookings
+				.AsNoTracking()
 				.FirstOrDefault(x => x.BookingId == id);
 		}
 
 		public Booking? GetByStripeSessionId(string stripeSessionId)
 		{
 			return _context.Bookings
+				.AsNoTracking()
 				.FirstOrDefault(x => x.StripeSessionId == stripeSessionId);
 		}
 
 		public List<Booking> GetByRejseId(int rejseId)
 		{
 			return _context.Bookings
+				.AsNoTracking()
 				.Where(x => x.RejseId == rejseId)
 				.OrderByDescending(x => x.CreatedAt)
 				.ToList();
@@ -55,6 +59,7 @@ namespace BusRejserLibrary.Repositories
 		public List<Booking> GetByUserId(int userId)
 		{
 			return _context.Bookings
+				.AsNoTracking()
 				.Where(x => x.UserId == userId)
 				.OrderByDescending(x => x.CreatedAt)
 				.ToList();

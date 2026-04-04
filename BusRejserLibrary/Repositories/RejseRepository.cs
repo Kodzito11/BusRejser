@@ -27,12 +27,14 @@ namespace BusRejserLibrary.Repositories
 		public Rejse? GetById(int id)
 		{
 			return _context.Rejser
+				.AsNoTracking()
 				.FirstOrDefault(x => x.RejseId == id);
 		}
 
 		public List<Rejse> GetAll()
 		{
 			return _context.Rejser
+				.AsNoTracking()
 				.OrderBy(x => x.StartAt)
 				.ToList();
 		}

@@ -27,6 +27,7 @@ namespace BusRejserLibrary.Repositories
 		public Bus? GetById(int id)
 		{
 			return _context.Buses
+				.AsNoTracking()
 				.Include(x => x.Faceliteter)
 				.FirstOrDefault(x => x.busId == id);
 		}
@@ -34,6 +35,7 @@ namespace BusRejserLibrary.Repositories
 		public List<Bus> GetAll()
 		{
 			return _context.Buses
+				.AsNoTracking()
 				.Include(x => x.Faceliteter)
 				.ToList();
 		}

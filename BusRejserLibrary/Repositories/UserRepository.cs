@@ -27,24 +27,28 @@ namespace BusRejserLibrary.Repositories
 		public User? GetById(int id)
 		{
 			return _context.Users
+				.AsNoTracking()
 				.FirstOrDefault(x => x.Id == id);
 		}
 
 		public User? GetByEmail(string email)
 		{
 			return _context.Users
+				.AsNoTracking()
 				.FirstOrDefault(x => x.Email == email);
 		}
 
 		public User? GetByUsername(string username)
 		{
 			return _context.Users
+				.AsNoTracking()
 				.FirstOrDefault(x => x.Username == username);
 		}
 
 		public List<User> GetAll()
 		{
 			return _context.Users
+				.AsNoTracking()
 				.OrderBy(x => x.Id)
 				.ToList();
 		}
