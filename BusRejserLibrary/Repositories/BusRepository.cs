@@ -1,155 +1,75 @@
-﻿using System;
-using System.Collections.Generic;
-using MySqlConnector;
+﻿using BusRejserLibrary.Database;
 using BusRejserLibrary.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace BusRejserLibrary.Repositories
 {
 	public class BusRepository
 	{
-		private readonly string _connectionString;
+		private readonly BusPlanenDbContext _context;
 
-		public BusRepository(string connectionString)
+		public BusRepository(BusPlanenDbContext context)
 		{
-			_connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+			_context = context;
 		}
 
 		public int Create(Bus bus)
 		{
-			if (bus == null) throw new ArgumentNullException(nameof(bus));
+			if (bus == null)
+				throw new ArgumentNullException(nameof(bus));
 
-			const string sql = @"
-			INSERT INTO bus (Registreringnummer, Model, Busselskab, Status, Type, Kapasitet, ImageUrl)
-			VALUES (@reg, @model, @selskab, @status, @type, @kap, @imageUrl);
-			SELECT LAST_INSERT_ID();";
+			_context.Buses.Add(bus);
+			_context.SaveChanges();
 
-			using var conn = new MySqlConnection(_connectionString);
-			conn.Open();
-
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@reg", bus.Registreringnummer);
-			cmd.Parameters.AddWithValue("@model", bus.Model);
-			cmd.Parameters.AddWithValue("@selskab", bus.Busselskab);
-			cmd.Parameters.AddWithValue("@status", (int)bus.Status);
-			cmd.Parameters.AddWithValue("@type", (int)bus.Type);
-			cmd.Parameters.AddWithValue("@kap", bus.Kapasitet);
-			cmd.Parameters.AddWithValue("@imageUrl", (object?)bus.ImageUrl ?? DBNull.Value);
-
-			var idObj = cmd.ExecuteScalar();
-			var newId = Convert.ToInt32(idObj);
-
-			bus.busId = newId;
-			return newId;
+			return bus.busId;
 		}
 
 		public Bus? GetById(int id)
 		{
-			const string sql = @"
-			SELECT busId, Registreringnummer, Model, Busselskab, Status, Type, Kapasitet, ImageUrl
-			FROM bus
-			WHERE busId = @id
-			LIMIT 1;";
-
-			using var conn = new MySqlConnection(_connectionString);
-			conn.Open();
-
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@id", id);
-
-			using var reader = cmd.ExecuteReader();
-			if (!reader.Read()) return null;
-
-			return MapBus(reader);
+			return _context.Buses
+				.Include(x => x.Faceliteter)
+				.FirstOrDefault(x => x.busId == id);
 		}
 
 		public List<Bus> GetAll()
 		{
-			const string sql = @"
-			SELECT busId, Registreringnummer, Model, Busselskab, Status, Type, Kapasitet, ImageUrl
-			FROM bus;";
-
-			var list = new List<Bus>();
-
-			using var conn = new MySqlConnection(_connectionString);
-			conn.Open();
-
-			using var cmd = new MySqlCommand(sql, conn);
-			using var reader = cmd.ExecuteReader();
-
-			while (reader.Read())
-				list.Add(MapBus(reader));
-
-			return list;
+			return _context.Buses
+				.Include(x => x.Faceliteter)
+				.ToList();
 		}
 
 		public bool Update(Bus bus)
 		{
-			if (bus == null) throw new ArgumentNullException(nameof(bus));
+			if (bus == null)
+				throw new ArgumentNullException(nameof(bus));
 
-			const string sql = @"
-			UPDATE bus
-			SET Registreringnummer = @reg,
-				Model = @model,
-				Busselskab = @selskab,
-				Status = @status,
-				Type = @type,
-				Kapasitet = @kap,
-				ImageUrl = @imageUrl
-			WHERE busId = @id;";
+			var existing = _context.Buses
+				.FirstOrDefault(x => x.busId == bus.busId);
 
-			using var conn = new MySqlConnection(_connectionString);
-			conn.Open();
+			if (existing == null)
+				return false;
 
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@id", bus.busId);
-			cmd.Parameters.AddWithValue("@reg", bus.Registreringnummer);
-			cmd.Parameters.AddWithValue("@model", bus.Model);
-			cmd.Parameters.AddWithValue("@selskab", bus.Busselskab);
-			cmd.Parameters.AddWithValue("@status", (int)bus.Status);
-			cmd.Parameters.AddWithValue("@type", (int)bus.Type);
-			cmd.Parameters.AddWithValue("@kap", bus.Kapasitet);
-			cmd.Parameters.AddWithValue("@imageUrl", (object?)bus.ImageUrl ?? DBNull.Value);
+			existing.Registreringnummer = bus.Registreringnummer;
+			existing.Model = bus.Model;
+			existing.Busselskab = bus.Busselskab;
+			existing.Status = bus.Status;
+			existing.Type = bus.Type;
+			existing.Kapasitet = bus.Kapasitet;
+			existing.ImageUrl = bus.ImageUrl;
 
-			return cmd.ExecuteNonQuery() > 0;
+			_context.SaveChanges();
+			return true;
 		}
 
 		public bool Delete(int id)
 		{
-			const string sql = @"DELETE FROM bus WHERE busId = @id;";
+			var bus = _context.Buses.FirstOrDefault(x => x.busId == id);
+			if (bus == null)
+				return false;
 
-			using var conn = new MySqlConnection(_connectionString);
-			conn.Open();
-
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@id", id);
-
-			return cmd.ExecuteNonQuery() > 0;
-		}
-
-		private static Bus MapBus(MySqlDataReader reader)
-		{
-			var busId = reader.GetInt32("busId");
-			var reg = reader.GetString("Registreringnummer");
-			var model = reader.GetString("Model");
-			var selskab = reader.IsDBNull(reader.GetOrdinal("Busselskab"))
-				? ""
-				: reader.GetString("Busselskab");
-
-			var status = (BusStatus)reader.GetInt32("Status");
-			var type = (BusType)reader.GetInt32("Type");
-			var kap = reader.GetInt32("Kapasitet");
-			var imageUrl = reader.IsDBNull(reader.GetOrdinal("ImageUrl"))
-				? null
-				: reader.GetString("ImageUrl");
-
-			var bus = Bus.Create(reg, model, selskab, status, type, kap, imageUrl);
-			bus.busId = busId;
-			bus.ImageUrl = imageUrl;
-
-			// hvis Faceliteter ikke er sat i din Bus.Create -> undgå null senere
-			bus.Faceliteter ??= new List<Facilitet>();
-
-			return bus;
+			_context.Buses.Remove(bus);
+			_context.SaveChanges();
+			return true;
 		}
 	}
 }

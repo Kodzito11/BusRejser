@@ -4,6 +4,7 @@ using BusRejserLibrary.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BusRejserLibrary.Migrations
 {
     [DbContext(typeof(BusPlanenDbContext))]
-    partial class BusPlanenDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260404161627_BusFacilitetRelation")]
+    partial class BusFacilitetRelation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -136,7 +139,12 @@ namespace BusRejserLibrary.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
+                    b.Property<int?>("busId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("busId");
 
                     b.ToTable("facilitet", (string)null);
                 });
@@ -255,34 +263,16 @@ namespace BusRejserLibrary.Migrations
                     b.ToTable("users", (string)null);
                 });
 
-            modelBuilder.Entity("bus_facilitet", b =>
-                {
-                    b.Property<int>("BusId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("FacilitetId")
-                        .HasColumnType("int");
-
-                    b.HasKey("BusId", "FacilitetId");
-
-                    b.HasIndex("FacilitetId");
-
-                    b.ToTable("bus_facilitet", (string)null);
-                });
-
-            modelBuilder.Entity("bus_facilitet", b =>
+            modelBuilder.Entity("BusRejserLibrary.Models.Facilitet", b =>
                 {
                     b.HasOne("BusRejserLibrary.Models.Bus", null)
-                        .WithMany()
-                        .HasForeignKey("BusId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .WithMany("Faceliteter")
+                        .HasForeignKey("busId");
+                });
 
-                    b.HasOne("BusRejserLibrary.Models.Facilitet", null)
-                        .WithMany()
-                        .HasForeignKey("FacilitetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+            modelBuilder.Entity("BusRejserLibrary.Models.Bus", b =>
+                {
+                    b.Navigation("Faceliteter");
                 });
 #pragma warning restore 612, 618
         }

@@ -43,6 +43,20 @@ namespace BusRejserLibrary.Models
 			return new Facilitet(name, description, extraPrice, type, isActive);
 		}
 
+		public void Update(
+			string name,
+			string description,
+			decimal extraPrice,
+			bool isActive,
+			FacilitetType type)
+		{
+			Name = name;
+			Description = description;
+			ExtraPrice = extraPrice;
+			IsActive = isActive;
+			Type = type;
+		}
+
 		public void UpdatePrice(decimal newPrice)
 		{
 			if (newPrice < 0) throw new ArgumentOutOfRangeException(nameof(newPrice), "Pris kan ikke være negativ.");

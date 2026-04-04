@@ -1,108 +1,68 @@
-﻿using System;
-using System.Collections.Generic;
-using BusRejserLibrary.Database;
+﻿using BusRejserLibrary.Database;
 using BusRejserLibrary.Models;
-using MySqlConnector;
 
 namespace BusRejserLibrary.Repositories
 {
 	public class FacilitetRepository
 	{
-		private readonly DBConnection _db;
+		private readonly BusPlanenDbContext _context;
 
-		public FacilitetRepository(DBConnection db)
+		public FacilitetRepository(BusPlanenDbContext context)
 		{
-			_db = db ?? throw new ArgumentNullException(nameof(db));
+			_context = context;
 		}
 
 		public int Create(Facilitet facilitet)
 		{
-			if (facilitet == null) throw new ArgumentNullException(nameof(facilitet));
+			if (facilitet == null)
+				throw new ArgumentNullException(nameof(facilitet));
 
-			const string sql = @"
-			INSERT INTO facilitet (Name, Description, ExtraPrice, IsActive, Type)
-			VALUES (@name, @desc, @price, @active, @type);
-			SELECT LAST_INSERT_ID();";
+			_context.Faciliteter.Add(facilitet);
+			_context.SaveChanges();
 
-			using var conn = _db.GetConnection();
-			conn.Open();
-
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@name", facilitet.Name);
-			cmd.Parameters.AddWithValue("@desc", facilitet.Description);
-			cmd.Parameters.AddWithValue("@price", facilitet.ExtraPrice);
-			cmd.Parameters.AddWithValue("@active", facilitet.IsActive ? 1 : 0);
-			cmd.Parameters.AddWithValue("@type", (int)facilitet.Type);
-
-			var idObj = cmd.ExecuteScalar();
-			return Convert.ToInt32(idObj);
+			return facilitet.Id;
 		}
 
 		public Facilitet? GetById(int id)
 		{
-			const string sql = @"
-			SELECT Id, Name, Description, ExtraPrice, IsActive, Type
-			FROM facilitet
-			WHERE Id = @id
-			LIMIT 1;";
-
-			using var conn = _db.GetConnection();
-			conn.Open();
-
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@id", id);
-
-			using var reader = cmd.ExecuteReader();
-			if (!reader.Read()) return null;
-
-			return MapFacilitet(reader);
+			return _context.Faciliteter.FirstOrDefault(x => x.Id == id);
 		}
 
 		public List<Facilitet> GetAll()
 		{
-			const string sql = @"
-			SELECT Id, Name, Description, ExtraPrice, IsActive, Type
-			FROM facilitet;";
+			return _context.Faciliteter.ToList();
+		}
 
-			var list = new List<Facilitet>();
+		public bool Update(Facilitet facilitet)
+		{
+			if (facilitet == null)
+				throw new ArgumentNullException(nameof(facilitet));
 
-			using var conn = _db.GetConnection();
-			conn.Open();
+			var existing = _context.Faciliteter.FirstOrDefault(x => x.Id == facilitet.Id);
+			if (existing == null)
+				return false;
 
-			using var cmd = new MySqlCommand(sql, conn);
-			using var reader = cmd.ExecuteReader();
+			existing.Update(
+				facilitet.Name,
+				facilitet.Description,
+				facilitet.ExtraPrice,
+				facilitet.IsActive,
+				facilitet.Type
+			);
 
-			while (reader.Read())
-				list.Add(MapFacilitet(reader));
-
-			return list;
+			_context.SaveChanges();
+			return true;
 		}
 
 		public bool Delete(int id)
 		{
-			const string sql = @"DELETE FROM facilitet WHERE Id = @id;";
+			var facilitet = _context.Faciliteter.FirstOrDefault(x => x.Id == id);
+			if (facilitet == null)
+				return false;
 
-			using var conn = _db.GetConnection();
-			conn.Open();
-
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@id", id);
-
-			return cmd.ExecuteNonQuery() > 0;
-		}
-
-		private static Facilitet MapFacilitet(MySqlDataReader reader)
-		{
-			var id = reader.GetInt32("Id");
-			var name = reader.GetString("Name");
-			var desc = reader.IsDBNull(reader.GetOrdinal("Description")) ? "" : reader.GetString("Description");
-			var price = reader.GetDecimal("ExtraPrice");
-			var isActive = reader.GetInt32("IsActive") == 1;
-			var type = (FacilitetType)reader.GetInt32("Type");
-
-			// create (sætter ikke Id i din model - den har private set)
-			// så vi returnerer objektet uden Id (til API er det fint i første version)
-			return Facilitet.Create(name, desc, price, type, isActive);
+			_context.Faciliteter.Remove(facilitet);
+			_context.SaveChanges();
+			return true;
 		}
 	}
 }

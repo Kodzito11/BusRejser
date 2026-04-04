@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Text;
-using BusRejserLibrary.Database;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -95,17 +94,19 @@ builder.Services.AddDbContext<BusPlanenDbContext>(options =>
 	));
 
 // Repositories
-builder.Services.AddScoped(_ => new BusRepository(connStr));
+builder.Services.AddScoped<BusRepository>();
 
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddScoped<FacilitetRepository>();
 builder.Services.AddScoped<BusFacilitetRepository>();
+
 builder.Services.AddScoped<RejseRepository>();
+builder.Services.AddScoped<IRejseRepository, RejseRepository>();
+
 builder.Services.AddScoped<BookingRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
-builder.Services.AddScoped<IRejseRepository, RejseRepository>();
 
 builder.Services.AddScoped<PasswordResetTokenRepository>();
 

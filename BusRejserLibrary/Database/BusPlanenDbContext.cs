@@ -32,7 +32,28 @@ namespace BusRejserLibrary.Database
 			modelBuilder.Entity<User>().HasKey(x => x.Id);
 			modelBuilder.Entity<Rejse>().HasKey(x => x.RejseId);
 			modelBuilder.Entity<Booking>().HasKey(x => x.BookingId);
-			modelBuilder.Entity<Bus>().HasKey(x => x.busId);
+
+			modelBuilder.Entity<Bus>()
+				.HasMany(x => x.Faceliteter)
+				.WithMany()
+				.UsingEntity<Dictionary<string, object>>(
+					"bus_facilitet",
+					j => j
+						.HasOne<Facilitet>()
+						.WithMany()
+						.HasForeignKey("FacilitetId")
+						.OnDelete(DeleteBehavior.Cascade),
+					j => j
+						.HasOne<Bus>()
+						.WithMany()
+						.HasForeignKey("BusId")
+						.OnDelete(DeleteBehavior.Cascade),
+					j =>
+					{
+						j.HasKey("BusId", "FacilitetId");
+						j.ToTable("bus_facilitet");
+					});
+
 			modelBuilder.Entity<Facilitet>().HasKey(x => x.Id);
 			modelBuilder.Entity<PasswordResetToken>().HasKey(x => x.Id);
 		}

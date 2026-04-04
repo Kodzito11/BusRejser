@@ -1,327 +1,105 @@
 ﻿using BusRejserLibrary.Database;
 using BusRejserLibrary.Enums;
 using BusRejserLibrary.Models;
-using MySqlConnector;
+using Microsoft.EntityFrameworkCore;
 
 namespace BusRejserLibrary.Repositories
 {
 	public class BookingRepository : IBookingRepository
 	{
-		private readonly DBConnection _db;
+		private readonly BusPlanenDbContext _context;
 
-		public BookingRepository(DBConnection db)
+		public BookingRepository(BusPlanenDbContext context)
 		{
-			_db = db ?? throw new ArgumentNullException(nameof(db));
+			_context = context;
 		}
 
 		public int Create(Booking booking)
 		{
-			const string sql = @"
-				INSERT INTO booking
-				(rejseId, userId, bookingReference, kundeNavn, kundeEmail, antalPladser, totalPrice, status, createdAt, paidAt, stripeSessionId, stripePaymentIntentId)
-				VALUES
-				(@rejseId, @userId, @bookingReference, @kundeNavn, @kundeEmail, @antalPladser, @totalPrice, @status, @createdAt, @paidAt, @stripeSessionId, @stripePaymentIntentId);
-				SELECT LAST_INSERT_ID();";
+			if (booking == null)
+				throw new ArgumentNullException(nameof(booking));
 
-			using var conn = _db.GetConnection();
-			conn.Open();
+			_context.Bookings.Add(booking);
+			_context.SaveChanges();
 
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@rejseId", booking.RejseId);
-			cmd.Parameters.AddWithValue("@userId", (object?)booking.UserId ?? DBNull.Value);
-			cmd.Parameters.AddWithValue("@bookingReference", booking.BookingReference);
-			cmd.Parameters.AddWithValue("@kundeNavn", booking.KundeNavn);
-			cmd.Parameters.AddWithValue("@kundeEmail", booking.KundeEmail);
-			cmd.Parameters.AddWithValue("@antalPladser", booking.AntalPladser);
-			cmd.Parameters.AddWithValue("@totalPrice", booking.TotalPrice);
-			cmd.Parameters.AddWithValue("@status", (int)booking.Status);
-			cmd.Parameters.AddWithValue("@createdAt", booking.CreatedAt);
-			cmd.Parameters.AddWithValue("@paidAt", (object?)booking.PaidAt ?? DBNull.Value);
-			cmd.Parameters.AddWithValue("@stripeSessionId", (object?)booking.StripeSessionId ?? DBNull.Value);
-			cmd.Parameters.AddWithValue("@stripePaymentIntentId", (object?)booking.StripePaymentIntentId ?? DBNull.Value);
-
-			var idObj = cmd.ExecuteScalar();
-			var newId = Convert.ToInt32(idObj);
-
-			booking.BookingId = newId;
-			return newId;
+			return booking.BookingId;
 		}
 
 		public List<Booking> GetAll()
 		{
-			var bookings = new List<Booking>();
-
-			using var conn = _db.GetConnection();
-			conn.Open();
-
-			using var cmd = conn.CreateCommand();
-			cmd.CommandText = @"
-				SELECT 
-					bookingId,
-					rejseId,
-					userId,
-					bookingReference,
-					kundeNavn,
-					kundeEmail,
-					antalPladser,
-					totalPrice,
-					status,
-					createdAt,
-					paidAt,
-					stripeSessionId,
-					stripePaymentIntentId
-				FROM booking
-				ORDER BY bookingId DESC";
-
-			using var reader = cmd.ExecuteReader();
-
-			while (reader.Read())
-			{
-				bookings.Add(Map(reader));
-			}
-
-			return bookings;
+			return _context.Bookings
+				.OrderByDescending(x => x.BookingId)
+				.ToList();
 		}
 
 		public Booking? GetById(int id)
 		{
-			const string sql = @"
-				SELECT 
-					bookingId,
-					rejseId,
-					userId,
-					bookingReference,
-					kundeNavn,
-					kundeEmail,
-					antalPladser,
-					totalPrice,
-					status,
-					createdAt,
-					paidAt,
-					stripeSessionId,
-					stripePaymentIntentId
-				FROM booking
-				WHERE bookingId = @id
-				LIMIT 1;";
-
-			using var conn = _db.GetConnection();
-			conn.Open();
-
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@id", id);
-
-			using var reader = cmd.ExecuteReader();
-			if (!reader.Read()) return null;
-
-			return Map(reader);
+			return _context.Bookings
+				.FirstOrDefault(x => x.BookingId == id);
 		}
 
 		public Booking? GetByStripeSessionId(string stripeSessionId)
 		{
-			const string sql = @"
-				SELECT
-					bookingId,
-					rejseId,
-					userId,
-					bookingReference,
-					kundeNavn,
-					kundeEmail,
-					antalPladser,
-					totalPrice,
-					status,
-					createdAt,
-					paidAt,
-					stripeSessionId,
-					stripePaymentIntentId
-				FROM booking
-				WHERE stripeSessionId = @stripeSessionId
-				LIMIT 1;";
-
-			using var conn = _db.GetConnection();
-			conn.Open();
-
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@stripeSessionId", stripeSessionId);
-
-			using var reader = cmd.ExecuteReader();
-			if (!reader.Read()) return null;
-
-			return Map(reader);
+			return _context.Bookings
+				.FirstOrDefault(x => x.StripeSessionId == stripeSessionId);
 		}
 
 		public List<Booking> GetByRejseId(int rejseId)
 		{
-			const string sql = @"
-				SELECT 
-					bookingId,
-					rejseId,
-					userId,
-					bookingReference,
-					kundeNavn,
-					kundeEmail,
-					antalPladser,
-					totalPrice,
-					status,
-					createdAt,
-					paidAt,
-					stripeSessionId,
-					stripePaymentIntentId
-				FROM booking
-				WHERE rejseId = @rejseId
-				ORDER BY createdAt DESC;";
-
-			var list = new List<Booking>();
-
-			using var conn = _db.GetConnection();
-			conn.Open();
-
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@rejseId", rejseId);
-
-			using var reader = cmd.ExecuteReader();
-			while (reader.Read())
-				list.Add(Map(reader));
-
-			return list;
-		}
-
-		public int GetTotalBookedSeatsForRejse(int rejseId)
-		{
-			const string sql = @"
-				SELECT COALESCE(SUM(antalPladser), 0)
-				FROM booking
-				WHERE rejseId = @rejseId
-				  AND status = @status;";
-
-			using var conn = _db.GetConnection();
-			conn.Open();
-
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@rejseId", rejseId);
-			cmd.Parameters.AddWithValue("@status", (int)BookingStatus.Paid);
-
-			var result = cmd.ExecuteScalar();
-			return Convert.ToInt32(result);
+			return _context.Bookings
+				.Where(x => x.RejseId == rejseId)
+				.OrderByDescending(x => x.CreatedAt)
+				.ToList();
 		}
 
 		public List<Booking> GetByUserId(int userId)
 		{
-			const string sql = @"
-				SELECT 
-					bookingId,
-					rejseId,
-					userId,
-					bookingReference,
-					kundeNavn,
-					kundeEmail,
-					antalPladser,
-					totalPrice,
-					status,
-					createdAt,
-					paidAt,
-					stripeSessionId,
-					stripePaymentIntentId
-				FROM booking
-				WHERE userId = @userId
-				ORDER BY createdAt DESC;";
+			return _context.Bookings
+				.Where(x => x.UserId == userId)
+				.OrderByDescending(x => x.CreatedAt)
+				.ToList();
+		}
 
-			var list = new List<Booking>();
-
-			using var conn = _db.GetConnection();
-			conn.Open();
-
-			using var cmd = new MySqlCommand(sql, conn);
-			cmd.Parameters.AddWithValue("@userId", userId);
-
-			using var reader = cmd.ExecuteReader();
-			while (reader.Read())
-				list.Add(Map(reader));
-
-			return list;
+		public int GetTotalBookedSeatsForRejse(int rejseId)
+		{
+			return _context.Bookings
+				.Where(x => x.RejseId == rejseId && x.Status == BookingStatus.Paid)
+				.Sum(x => (int?)x.AntalPladser) ?? 0;
 		}
 
 		public bool CancelAndReleaseSeats(int bookingId)
 		{
-			using var conn = _db.GetConnection();
-			conn.Open();
-
-			using var transaction = conn.BeginTransaction();
+			using var transaction = _context.Database.BeginTransaction();
 
 			try
 			{
-				const string selectSql = @"
-					SELECT rejseId, antalPladser, status
-					FROM booking
-					WHERE bookingId = @bookingId
-					FOR UPDATE;";
+				var booking = _context.Bookings
+					.FirstOrDefault(x => x.BookingId == bookingId);
 
-				int rejseId;
-				int antalPladser;
-				int status;
+				if (booking == null)
+					return false;
 
-				using (var selectCmd = new MySqlCommand(selectSql, conn, transaction))
-				{
-					selectCmd.Parameters.AddWithValue("@bookingId", bookingId);
-
-					using var reader = selectCmd.ExecuteReader();
-
-					if (!reader.Read())
-					{
-						transaction.Rollback();
-						return false;
-					}
-
-					rejseId = reader.GetInt32("rejseId");
-					antalPladser = reader.GetInt32("antalPladser");
-					status = reader.GetInt32("status");
-				}
-
-				if ((BookingStatus)status == BookingStatus.Cancelled)
-				{
-					transaction.Commit();
+				if (booking.Status == BookingStatus.Cancelled)
 					return true;
-				}
 
-				const string cancelSql = @"
-					UPDATE booking
-					SET status = @cancelledStatus
-					WHERE bookingId = @bookingId
-					  AND status = @paidStatus;";
+				if (booking.Status != BookingStatus.Paid)
+					return false;
 
-				using (var cancelCmd = new MySqlCommand(cancelSql, conn, transaction))
-				{
-					cancelCmd.Parameters.AddWithValue("@bookingId", bookingId);
-					cancelCmd.Parameters.AddWithValue("@cancelledStatus", (int)BookingStatus.Cancelled);
-					cancelCmd.Parameters.AddWithValue("@paidStatus", (int)BookingStatus.Paid);
+				var rejse = _context.Rejser
+					.FirstOrDefault(x => x.RejseId == booking.RejseId);
 
-					var cancelRows = cancelCmd.ExecuteNonQuery();
-					if (cancelRows == 0)
-					{
-						transaction.Rollback();
-						return false;
-					}
-				}
+				if (rejse == null)
+					return false;
 
-				const string releaseSeatsSql = @"
-					UPDATE rejse
-					SET bookedSeats = bookedSeats - @antalPladser
-					WHERE rejseId = @rejseId
-					  AND bookedSeats >= @antalPladser;";
+				if (rejse.BookedSeats < booking.AntalPladser)
+					return false;
 
-				using (var seatsCmd = new MySqlCommand(releaseSeatsSql, conn, transaction))
-				{
-					seatsCmd.Parameters.AddWithValue("@rejseId", rejseId);
-					seatsCmd.Parameters.AddWithValue("@antalPladser", antalPladser);
+				booking.Cancel();
+				rejse.BookedSeats -= booking.AntalPladser;
 
-					var seatRows = seatsCmd.ExecuteNonQuery();
-					if (seatRows == 0)
-					{
-						transaction.Rollback();
-						return false;
-					}
-				}
-
+				_context.SaveChanges();
 				transaction.Commit();
+
 				return true;
 			}
 			catch
@@ -333,86 +111,37 @@ namespace BusRejserLibrary.Repositories
 
 		public bool ReactivateAndReserveSeats(int bookingId)
 		{
-			using var conn = _db.GetConnection();
-			conn.Open();
-
-			using var transaction = conn.BeginTransaction();
+			using var transaction = _context.Database.BeginTransaction();
 
 			try
 			{
-				const string selectSql = @"
-					SELECT rejseId, antalPladser, status
-					FROM booking
-					WHERE bookingId = @bookingId
-					FOR UPDATE;";
+				var booking = _context.Bookings
+					.FirstOrDefault(x => x.BookingId == bookingId);
 
-				int rejseId;
-				int antalPladser;
-				int status;
+				if (booking == null)
+					return false;
 
-				using (var selectCmd = new MySqlCommand(selectSql, conn, transaction))
-				{
-					selectCmd.Parameters.AddWithValue("@bookingId", bookingId);
-
-					using var reader = selectCmd.ExecuteReader();
-
-					if (!reader.Read())
-					{
-						transaction.Rollback();
-						return false;
-					}
-
-					rejseId = reader.GetInt32("rejseId");
-					antalPladser = reader.GetInt32("antalPladser");
-					status = reader.GetInt32("status");
-				}
-
-				if ((BookingStatus)status == BookingStatus.Paid)
-				{
-					transaction.Commit();
+				if (booking.Status == BookingStatus.Paid)
 					return true;
-				}
 
-				const string reserveSeatsSql = @"
-					UPDATE rejse
-					SET bookedSeats = bookedSeats + @antalPladser
-					WHERE rejseId = @rejseId
-					  AND bookedSeats + @antalPladser <= maxSeats;";
+				if (booking.Status != BookingStatus.Cancelled)
+					return false;
 
-				using (var seatsCmd = new MySqlCommand(reserveSeatsSql, conn, transaction))
-				{
-					seatsCmd.Parameters.AddWithValue("@rejseId", rejseId);
-					seatsCmd.Parameters.AddWithValue("@antalPladser", antalPladser);
+				var rejse = _context.Rejser
+					.FirstOrDefault(x => x.RejseId == booking.RejseId);
 
-					var seatRows = seatsCmd.ExecuteNonQuery();
-					if (seatRows == 0)
-					{
-						transaction.Rollback();
-						return false;
-					}
-				}
+				if (rejse == null)
+					return false;
 
-				const string reactivateSql = @"
-					UPDATE booking
-					SET status = @paidStatus
-					WHERE bookingId = @bookingId
-					  AND status = @cancelledStatus;";
+				if (rejse.BookedSeats + booking.AntalPladser > rejse.MaxSeats)
+					return false;
 
-				using (var reactivateCmd = new MySqlCommand(reactivateSql, conn, transaction))
-				{
-					reactivateCmd.Parameters.AddWithValue("@bookingId", bookingId);
-					reactivateCmd.Parameters.AddWithValue("@paidStatus", (int)BookingStatus.Paid);
-					reactivateCmd.Parameters.AddWithValue("@cancelledStatus", (int)BookingStatus.Cancelled);
+				rejse.BookedSeats += booking.AntalPladser;
+				booking.MarkAsPaid(booking.StripeSessionId, booking.StripePaymentIntentId);
 
-					var reactivateRows = reactivateCmd.ExecuteNonQuery();
-					if (reactivateRows == 0)
-					{
-						transaction.Rollback();
-						return false;
-					}
-				}
-
+				_context.SaveChanges();
 				transaction.Commit();
+
 				return true;
 			}
 			catch
@@ -420,41 +149,6 @@ namespace BusRejserLibrary.Repositories
 				transaction.Rollback();
 				throw;
 			}
-		}
-
-		private static Booking Map(MySqlDataReader reader)
-		{
-			int? userId = reader.IsDBNull(reader.GetOrdinal("userId"))
-				? null
-				: reader.GetInt32("userId");
-
-			DateTime? paidAt = reader.IsDBNull(reader.GetOrdinal("paidAt"))
-				? null
-				: DateTime.SpecifyKind(reader.GetDateTime("paidAt"), DateTimeKind.Utc);
-
-			string? stripeSessionId = reader.IsDBNull(reader.GetOrdinal("stripeSessionId"))
-				? null
-				: reader.GetString("stripeSessionId");
-
-			string? stripePaymentIntentId = reader.IsDBNull(reader.GetOrdinal("stripePaymentIntentId"))
-				? null
-				: reader.GetString("stripePaymentIntentId");
-
-			return Booking.Restore(
-				reader.GetInt32("bookingId"),
-				reader.GetInt32("rejseId"),
-				userId,
-				reader.GetString("bookingReference"),
-				reader.GetString("kundeNavn"),
-				reader.GetString("kundeEmail"),
-				reader.GetInt32("antalPladser"),
-				reader.GetDecimal("totalPrice"),
-				(BookingStatus)reader.GetInt32("status"),
-				DateTime.SpecifyKind(reader.GetDateTime("createdAt"), DateTimeKind.Utc),
-				paidAt,
-				stripeSessionId,
-				stripePaymentIntentId
-			);
 		}
 	}
 }
