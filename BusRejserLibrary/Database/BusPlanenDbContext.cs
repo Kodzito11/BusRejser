@@ -28,10 +28,15 @@ namespace BusRejserLibrary.Database
 			modelBuilder.Entity<Facilitet>().ToTable("facilitet");
 			modelBuilder.Entity<PasswordResetToken>().ToTable("password_reset_tokens");
 
-
 			modelBuilder.Entity<User>().HasKey(x => x.Id);
 			modelBuilder.Entity<Rejse>().HasKey(x => x.RejseId);
 			modelBuilder.Entity<Booking>().HasKey(x => x.BookingId);
+			modelBuilder.Entity<Facilitet>().HasKey(x => x.Id);
+			modelBuilder.Entity<PasswordResetToken>().HasKey(x => x.Id);
+
+			modelBuilder.Entity<Rejse>()
+				.Property(x => x.Version)
+				.IsConcurrencyToken();
 
 			modelBuilder.Entity<Bus>()
 				.HasMany(x => x.Faceliteter)
@@ -53,9 +58,6 @@ namespace BusRejserLibrary.Database
 						j.HasKey("BusId", "FacilitetId");
 						j.ToTable("bus_facilitet");
 					});
-
-			modelBuilder.Entity<Facilitet>().HasKey(x => x.Id);
-			modelBuilder.Entity<PasswordResetToken>().HasKey(x => x.Id);
 		}
 	}
 }

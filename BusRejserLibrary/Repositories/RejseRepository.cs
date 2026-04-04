@@ -71,6 +71,7 @@ namespace BusRejserLibrary.Repositories
 			existing.ImageUrl = rejse.ImageUrl;
 			existing.IsFeatured = rejse.IsFeatured;
 			existing.IsPublished = rejse.IsPublished;
+			existing.Version++;
 
 			_context.SaveChanges();
 			return true;
@@ -78,30 +79,68 @@ namespace BusRejserLibrary.Repositories
 
 		public bool TryReserveSeats(int rejseId, int antalPladser)
 		{
-			var rejse = _context.Rejser.FirstOrDefault(x => x.RejseId == rejseId);
-			if (rejse == null)
-				return false;
+			const int maxRetries = 3;
 
-			if (rejse.BookedSeats + antalPladser > rejse.MaxSeats)
-				return false;
+			for (int attempt = 0; attempt < maxRetries; attempt++)
+			{
+				var rejse = _context.Rejser.FirstOrDefault(x => x.RejseId == rejseId);
+				if (rejse == null)
+					return false;
 
-			rejse.BookedSeats += antalPladser;
-			_context.SaveChanges();
-			return true;
+				if (rejse.BookedSeats + antalPladser > rejse.MaxSeats)
+					return false;
+
+				rejse.BookedSeats += antalPladser;
+				rejse.Version++;
+
+				try
+				{
+					_context.SaveChanges();
+					return true;
+				}
+				catch (DbUpdateConcurrencyException)
+				{
+					_context.ChangeTracker.Clear();
+
+					if (attempt == maxRetries - 1)
+						return false;
+				}
+			}
+
+			return false;
 		}
 
 		public bool ReleaseSeats(int rejseId, int antalPladser)
 		{
-			var rejse = _context.Rejser.FirstOrDefault(x => x.RejseId == rejseId);
-			if (rejse == null)
-				return false;
+			const int maxRetries = 3;
 
-			if (rejse.BookedSeats < antalPladser)
-				return false;
+			for (int attempt = 0; attempt < maxRetries; attempt++)
+			{
+				var rejse = _context.Rejser.FirstOrDefault(x => x.RejseId == rejseId);
+				if (rejse == null)
+					return false;
 
-			rejse.BookedSeats -= antalPladser;
-			_context.SaveChanges();
-			return true;
+				if (rejse.BookedSeats < antalPladser)
+					return false;
+
+				rejse.BookedSeats -= antalPladser;
+				rejse.Version++;
+
+				try
+				{
+					_context.SaveChanges();
+					return true;
+				}
+				catch (DbUpdateConcurrencyException)
+				{
+					_context.ChangeTracker.Clear();
+
+					if (attempt == maxRetries - 1)
+						return false;
+				}
+			}
+
+			return false;
 		}
 	}
 }

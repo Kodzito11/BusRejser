@@ -11,7 +11,7 @@
 		public int MaxSeats { get; set; }
 		public int? BusId { get; set; }
 		public int BookedSeats { get; set; }
-
+		public long Version { get; set; }
 		public string? ShortDescription { get; set; }
 		public string? Description { get; set; }
 		public string? ImageUrl { get; set; }
@@ -74,8 +74,8 @@
 			if (price < 0)
 				throw new ArgumentOutOfRangeException(nameof(price));
 
-			if (maxSeats < 0)
-				throw new ArgumentOutOfRangeException(nameof(maxSeats));
+			if (maxSeats <= 0)
+				throw new ArgumentOutOfRangeException(nameof(maxSeats), "MaxSeats skal være større end 0.");
 
 			if (!string.IsNullOrWhiteSpace(shortDescription) && shortDescription.Length > 300)
 				throw new ArgumentException("ShortDescription må max være 300 tegn.");
