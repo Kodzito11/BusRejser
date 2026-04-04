@@ -33,6 +33,12 @@ namespace BusRejserLibrary.Models
 		public List<Facilitet> Faceliteter { get; set; } = new();
 		public string? ImageUrl { get; set; }
 
+		private Bus()
+		{
+			Registreringnummer = string.Empty;
+			Model = string.Empty;
+			Busselskab = string.Empty;
+		}
 
 		///Factory method
 		private Bus

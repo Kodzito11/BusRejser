@@ -1,103 +1,60 @@
-﻿using BusRejserLibrary.Models;
-using MySqlConnector;
+﻿using BusRejserLibrary.Database;
+using BusRejserLibrary.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace BusRejserLibrary.Repositories
 {
 	public class PasswordResetTokenRepository
 	{
-		private readonly string _connectionString;
+		private readonly BusPlanenDbContext _context;
 
-		public PasswordResetTokenRepository(string connectionString)
+		public PasswordResetTokenRepository(BusPlanenDbContext context)
 		{
-			_connectionString = connectionString;
+			_context = context;
 		}
 
 		public void Create(PasswordResetToken token)
 		{
-			using var conn = new MySqlConnection(_connectionString);
-			conn.Open();
+			if (token == null)
+				throw new ArgumentNullException(nameof(token));
 
-			var cmd = conn.CreateCommand();
-			cmd.CommandText = @"
-				INSERT INTO password_reset_tokens
-				(UserId, TokenHash, ExpiresAt, CreatedAt)
-				VALUES (@userId, @hash, @expiresAt, @createdAt)
-			";
-
-			cmd.Parameters.AddWithValue("@userId", token.UserId);
-			cmd.Parameters.AddWithValue("@hash", token.TokenHash);
-			cmd.Parameters.AddWithValue("@expiresAt", token.ExpiresAt);
-			cmd.Parameters.AddWithValue("@createdAt", token.CreatedAt);
-
-			cmd.ExecuteNonQuery();
+			_context.PasswordResetTokens.Add(token);
+			_context.SaveChanges();
 		}
 
 		public PasswordResetToken? GetActiveByHash(string hash)
 		{
-			using var conn = new MySqlConnection(_connectionString);
-			conn.Open();
-
-			var cmd = conn.CreateCommand();
-			cmd.CommandText = @"
-				SELECT * FROM password_reset_tokens
-				WHERE TokenHash = @hash
-				  AND UsedAt IS NULL
-				LIMIT 1
-			";
-
-			cmd.Parameters.AddWithValue("@hash", hash);
-
-			using var reader = cmd.ExecuteReader();
-			if (!reader.Read()) return null;
-
-			var usedAtIndex = reader.GetOrdinal("UsedAt");
-
-			return new PasswordResetToken
-			{
-				Id = reader.GetInt32("Id"),
-				UserId = reader.GetInt32("UserId"),
-				TokenHash = reader.GetString("TokenHash"),
-				ExpiresAt = reader.GetDateTime("ExpiresAt"),
-				UsedAt = reader.IsDBNull(usedAtIndex) ? null : reader.GetDateTime(usedAtIndex),
-				CreatedAt = reader.GetDateTime("CreatedAt")
-			};
+			return _context.PasswordResetTokens
+				.FirstOrDefault(x => x.TokenHash == hash && x.UsedAt == null);
 		}
 
 		public void MarkAsUsed(int id)
 		{
-			using var conn = new MySqlConnection(_connectionString);
-			conn.Open();
+			var token = _context.PasswordResetTokens
+				.FirstOrDefault(x => x.Id == id);
 
-			var cmd = conn.CreateCommand();
-			cmd.CommandText = @"
-				UPDATE password_reset_tokens
-				SET UsedAt = @usedAt
-				WHERE Id = @id
-			";
+			if (token == null)
+				return;
 
-			cmd.Parameters.AddWithValue("@usedAt", DateTime.UtcNow);
-			cmd.Parameters.AddWithValue("@id", id);
-
-			cmd.ExecuteNonQuery();
+			token.UsedAt = DateTime.UtcNow;
+			_context.SaveChanges();
 		}
 
 		public void InvalidateAllForUser(int userId)
 		{
-			using var conn = new MySqlConnection(_connectionString);
-			conn.Open();
+			var tokens = _context.PasswordResetTokens
+				.Where(x => x.UserId == userId && x.UsedAt == null)
+				.ToList();
 
-			var cmd = conn.CreateCommand();
-			cmd.CommandText = @"
-				UPDATE password_reset_tokens
-				SET UsedAt = @usedAt
-				WHERE UserId = @userId
-				  AND UsedAt IS NULL
-			";
+			if (tokens.Count == 0)
+				return;
 
-			cmd.Parameters.AddWithValue("@usedAt", DateTime.UtcNow);
-			cmd.Parameters.AddWithValue("@userId", userId);
+			foreach (var token in tokens)
+			{
+				token.UsedAt = DateTime.UtcNow;
+			}
 
-			cmd.ExecuteNonQuery();
+			_context.SaveChanges();
 		}
 	}
 }

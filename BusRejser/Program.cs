@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Text;
+using BusRejserLibrary.Database;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -85,17 +87,27 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 		};
 	});
 
+// DbContext
+builder.Services.AddDbContext<BusPlanenDbContext>(options =>
+	options.UseMySql(
+		builder.Configuration.GetConnectionString("DefaultConnection"),
+		ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
+	));
+
 // Repositories
 builder.Services.AddScoped(_ => new BusRepository(connStr));
-builder.Services.AddScoped(_ => new UserRepository(connStr));
+
+builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
 builder.Services.AddScoped<FacilitetRepository>();
 builder.Services.AddScoped<BusFacilitetRepository>();
 builder.Services.AddScoped<RejseRepository>();
 builder.Services.AddScoped<BookingRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IRejseRepository, RejseRepository>();
-builder.Services.AddScoped<IUserRepository>(_ => new UserRepository(connStr));
-builder.Services.AddScoped<PasswordResetTokenRepository>(sp => new PasswordResetTokenRepository(connStr));
+
+builder.Services.AddScoped<PasswordResetTokenRepository>();
 
 // Services
 builder.Services.AddScoped<BusService>();

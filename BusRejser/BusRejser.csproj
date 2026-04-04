@@ -10,6 +10,11 @@
 		<PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
 		<PackageReference Include="MailKit" Version="4.15.1" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.25" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.25" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.25">
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		  <PrivateAssets>all</PrivateAssets>
+		</PackageReference>
 		<PackageReference Include="MySqlConnector" Version="2.4.0" />
 		<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
 		<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
@@ -23,9 +28,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Reference Include="BusRejserLibrary">
-	    <HintPath>..\BusRejserLibrary\bin\Debug\net8.0\BusRejserLibrary.dll</HintPath>
-	  </Reference>
+		<ProjectReference Include="..\BusRejserLibrary\BusRejserLibrary.csproj" />
 	</ItemGroup>
 
 </Project>
