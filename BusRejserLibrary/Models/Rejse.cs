@@ -1,4 +1,6 @@
-﻿namespace BusRejserLibrary.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace BusRejserLibrary.Models
 {
 	public class Rejse
 	{
@@ -11,7 +13,10 @@
 		public int MaxSeats { get; set; }
 		public int? BusId { get; set; }
 		public int BookedSeats { get; set; }
+
+		[ConcurrencyCheck]
 		public long Version { get; set; }
+
 		public string? ShortDescription { get; set; }
 		public string? Description { get; set; }
 		public string? ImageUrl { get; set; }
