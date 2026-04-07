@@ -20,6 +20,10 @@ namespace BusRejserLibrary.Models
 		public Enums.UserRole Role { get; set; } = Enums.UserRole.Kunde;
 
 		public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+		public string? FullName { get; set; }
+
+		public string? Phone { get; set; }
 	}
 
 }

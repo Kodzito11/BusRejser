@@ -118,6 +118,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<StripeService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<UserService>();
 
 var app = builder.Build();
 
