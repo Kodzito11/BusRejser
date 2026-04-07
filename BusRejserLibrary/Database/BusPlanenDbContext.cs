@@ -28,7 +28,7 @@ namespace BusRejserLibrary.Database
 			modelBuilder.Entity<Facilitet>().ToTable("facilitet");
 			modelBuilder.Entity<PasswordResetToken>().ToTable("password_reset_tokens");
 
-			modelBuilder.Entity<User>().HasKey(x => x.Id);
+			modelBuilder.Entity<User>().HasKey(x => x.UserId);
 			modelBuilder.Entity<Rejse>().HasKey(x => x.RejseId);
 			modelBuilder.Entity<Booking>().HasKey(x => x.BookingId);
 			modelBuilder.Entity<Facilitet>().HasKey(x => x.Id);

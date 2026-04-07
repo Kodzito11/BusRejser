@@ -21,14 +21,14 @@ namespace BusRejserLibrary.Repositories
 			_context.Users.Add(user);
 			_context.SaveChanges();
 
-			return user.Id;
+			return user.UserId;
 		}
 
 		public User? GetById(int id)
 		{
 			return _context.Users
 				.AsNoTracking()
-				.FirstOrDefault(x => x.Id == id);
+				.FirstOrDefault(x => x.UserId == id);
 		}
 
 		public User? GetByEmail(string email)
@@ -42,14 +42,14 @@ namespace BusRejserLibrary.Repositories
 		{
 			return _context.Users
 				.AsNoTracking()
-				.FirstOrDefault(x => x.Username == username);
+				.FirstOrDefault(x => x.FullName == username);
 		}
 
 		public List<User> GetAll()
 		{
 			return _context.Users
 				.AsNoTracking()
-				.OrderBy(x => x.Id)
+				.OrderBy(x => x.UserId)
 				.ToList();
 		}
 
@@ -58,23 +58,23 @@ namespace BusRejserLibrary.Repositories
 			if (user == null)
 				throw new ArgumentNullException(nameof(user));
 
-			var existing = _context.Users.FirstOrDefault(x => x.Id == user.Id);
+			var existing = _context.Users.FirstOrDefault(x => x.UserId == user.UserId);
 			if (existing == null)
 				return false;
 
-			existing.Username = user.Username;
+			existing.FullName = user.FullName;
+			existing.FirstName = user.FirstName;
+			existing.LastName = user.LastName;
 			existing.Email = user.Email;
-			existing.PasswordHash = user.PasswordHash;
-			existing.Role = user.Role;
-			existing.CreatedAt = user.CreatedAt;
-
+			existing.PhoneNumber = user.PhoneNumber;
+			existing.UpdatedAt = DateTime.UtcNow;
 			_context.SaveChanges();
 			return true;
 		}
 
 		public bool Delete(int id)
 		{
-			var user = _context.Users.FirstOrDefault(x => x.Id == id);
+			var user = _context.Users.FirstOrDefault(x => x.UserId == id);
 			if (user == null)
 				return false;
 

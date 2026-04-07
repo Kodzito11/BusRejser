@@ -9,21 +9,29 @@ namespace BusRejserLibrary.Models
 {
 	public class User
 	{
-		public int Id { get; set; }
+		public int UserId { get; set; }
 
-		public string Username { get; set; } = string.Empty;
+
+		public string FullName { get; set; } = string.Empty;
+		public string? FirstName { get; set; }
+		public string? LastName { get; set; }
 
 		public string Email { get; set; } = string.Empty;
+		public string? PhoneNumber { get; set; }
+
 
 		public string PasswordHash { get; set; } = string.Empty;
 
-		public Enums.UserRole Role { get; set; } = Enums.UserRole.Kunde;
+		public bool IsActive { get; set; } = true;
+		public bool EmailConfirmed { get; set; } = false;
+
+		public UserRole Role { get; set; } = Enums.UserRole.Kunde;
+
+
 
 		public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+		public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+		public DateTime LastLoginAt {get; set;}
 
-		public string? FullName { get; set; }
-
-		public string? Phone { get; set; }
 	}
-
 }
