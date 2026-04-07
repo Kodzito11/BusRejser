@@ -256,8 +256,47 @@ namespace BusRejser.Services
 				throw new NotFoundException("Stripe session blev ikke fundet.");
 			}
 
-			var booking = _bookingService.GetByStripeSessionId(sessionId);
 			var isPaid = session.PaymentStatus == "paid";
+			var booking = _bookingService.GetByStripeSessionId(sessionId);
+
+			if (isPaid && booking == null)
+			{
+				_logger.LogInformation(
+					"Paid Stripe session {SessionId} has no booking yet. Attempting fallback booking creation.",
+					sessionId
+				);
+
+				try
+				{
+					var request = BuildWebhookBookingRequest(session);
+
+					_logger.LogInformation(
+						"Fallback request built: RejseId {RejseId}, Seats {Seats}, Email {Email}",
+						request.RejseId,
+						request.AntalPladser,
+						request.KundeEmail
+					);
+
+					_bookingService.CreateFromStripe(request);
+
+					booking = _bookingService.GetByStripeSessionId(sessionId);
+
+					_logger.LogInformation(
+						"Fallback booking creation finished. BookingExists {Exists}",
+						booking != null
+					);
+				}
+				catch (Exception ex)
+				{
+					_logger.LogError(
+						ex,
+						"Fallback booking creation FAILED for session {SessionId}",
+						sessionId
+					);
+
+					throw;
+				}
+			}
 
 			var result = new CheckoutStatusResponse
 			{

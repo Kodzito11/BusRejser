@@ -35,40 +35,27 @@ namespace BusRejser.Controllers
 				request.AntalPladser
 			);
 
-			try
+			int? userId = null;
+
+			if (User.Identity?.IsAuthenticated == true)
 			{
-				int? userId = null;
-
-				if (User.Identity?.IsAuthenticated == true)
-				{
-					var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-					if (int.TryParse(userIdRaw, out var parsedUserId))
-						userId = parsedUserId;
-				}
-
-				var origin = Request.Headers.Origin.FirstOrDefault();
-				if (string.IsNullOrWhiteSpace(origin))
-					origin = "http://localhost:5173";
-
-				var url = _stripeService.CreateCheckoutSession(request, userId, origin);
-
-				_logger.LogInformation(
-					"Checkout session created successfully for RejseId {RejseId}",
-					request.RejseId
-				);
-
-				return Ok(new { url });
+				var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+				if (int.TryParse(userIdRaw, out var parsedUserId))
+					userId = parsedUserId;
 			}
-			catch (Exception ex)
-			{
-				_logger.LogError(
-					ex,
-					"Error creating checkout session for RejseId {RejseId}",
-					request.RejseId
-				);
 
-				return StatusCode(500, "An error occurred while creating the checkout session.");
-			}
+			var origin = Request.Headers.Origin.FirstOrDefault();
+			if (string.IsNullOrWhiteSpace(origin))
+				origin = "http://localhost:5173";
+
+			var url = _stripeService.CreateCheckoutSession(request, userId, origin);
+
+			_logger.LogInformation(
+				"Checkout session created successfully for RejseId {RejseId}",
+				request.RejseId
+			);
+
+			return Ok(new { url });
 		}
 
 		[HttpPost("webhook")]
@@ -77,28 +64,20 @@ namespace BusRejser.Controllers
 		{
 			_logger.LogInformation("Stripe webhook endpoint called");
 
-			try
-			{
-				var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-				var stripeSignature = Request.Headers["Stripe-Signature"].ToString();
+			var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+			var stripeSignature = Request.Headers["Stripe-Signature"].ToString();
 
-				_logger.LogInformation(
-					"Stripe webhook received. SignaturePresent: {SignaturePresent}, BodyLength: {BodyLength}",
-					!string.IsNullOrWhiteSpace(stripeSignature),
-					json.Length
-				);
+			_logger.LogInformation(
+				"Stripe webhook received. SignaturePresent: {SignaturePresent}, BodyLength: {BodyLength}",
+				!string.IsNullOrWhiteSpace(stripeSignature),
+				json.Length
+			);
 
-				_stripeService.HandleWebhook(json, stripeSignature);
+			_stripeService.HandleWebhook(json, stripeSignature);
 
-				_logger.LogInformation("Stripe webhook processed successfully");
+			_logger.LogInformation("Stripe webhook processed successfully");
 
-				return Ok();
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(ex, "Error processing Stripe webhook");
-				return StatusCode(500, ex.Message);
-			}
+			return Ok();
 		}
 
 		[HttpGet("checkout-status")]
@@ -116,28 +95,15 @@ namespace BusRejser.Controllers
 				sessionId
 			);
 
-			try
-			{
-				var result = _stripeService.GetCheckoutStatus(sessionId);
+			var result = _stripeService.GetCheckoutStatus(sessionId);
 
-				_logger.LogInformation(
-					"Checkout status returned for session {SessionId} with status {Status}",
-					sessionId,
-					result.Status
-				);
+			_logger.LogInformation(
+				"Checkout status returned for session {SessionId} with status {Status}",
+				sessionId,
+				result.Status
+			);
 
-				return Ok(result);
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(
-					ex,
-					"Error getting checkout status for session {SessionId}",
-					sessionId
-				);
-
-				return StatusCode(500, "An error occurred while getting checkout status.");
-			}
+			return Ok(result);
 		}
 	}
 }
