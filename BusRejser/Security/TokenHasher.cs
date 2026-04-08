@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace BusRejser.Security
 {

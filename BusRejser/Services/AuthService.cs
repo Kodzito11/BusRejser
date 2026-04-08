@@ -40,7 +40,6 @@ namespace BusRejser.Services
 
 			var user = new User
 			{
-				Username = username,
 				Email = email,
 				PasswordHash = passwordHash,
 				Role = BusRejserLibrary.Enums.UserRole.Kunde,
@@ -70,14 +69,14 @@ namespace BusRejser.Services
 			if (user == null)
 				return;
 
-			_passwordResetTokenRepository.InvalidateAllForUser(user.Id);
+			_passwordResetTokenRepository.InvalidateAllForUser(user.UserId);
 
 			var rawToken = Guid.NewGuid().ToString();
 			var tokenHash = Security.TokenHasher.Hash(rawToken);
 
 			var token = new BusRejserLibrary.Models.PasswordResetToken
 			{
-				UserId = user.Id,
+				UserId = user.UserId,
 				TokenHash = tokenHash,
 				ExpiresAt = DateTime.UtcNow.AddMinutes(30),
 				CreatedAt = DateTime.UtcNow

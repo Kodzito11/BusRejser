@@ -23,13 +23,12 @@ namespace BusRejser.Services
 
 			return new UserProfileResponse
 			{
-				UserId = user.Id,
-				Username = user.Username,
+				UserId = user.UserId,
 				Email = user.Email,
 				Role = user.Role.ToString(),
 				CreatedAt = user.CreatedAt,
 				FullName = user.FullName,
-				Phone = user.Phone
+				Phone = user.PhoneNumber
 			};
 		}
 
@@ -40,29 +39,27 @@ namespace BusRejser.Services
 				throw new NotFoundException("Bruger ikke fundet.");
 
 			var existingEmail = _userRepository.GetByEmail(request.Email);
-			if (existingEmail != null && existingEmail.Id != userId)
+			if (existingEmail != null && existingEmail.UserId != userId)
 				throw new ConflictException("Email findes allerede.");
 
 			var existingUsername = _userRepository.GetByUsername(request.Username);
-			if (existingUsername != null && existingUsername.Id != userId)
+			if (existingUsername != null && existingUsername.UserId != userId)
 				throw new ConflictException("Brugernavn findes allerede.");
 
-			user.Username = request.Username.Trim();
 			user.Email = request.Email.Trim();
 			user.FullName = string.IsNullOrWhiteSpace(request.FullName) ? null : request.FullName.Trim();
-			user.Phone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim();
+			user.PhoneNumber = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim();
 
 			_userRepository.Update(user);
 
 			return new UserProfileResponse
 			{
-				UserId = user.Id,
-				Username = user.Username,
+				UserId = user.UserId,
 				Email = user.Email,
 				Role = user.Role.ToString(),
 				CreatedAt = user.CreatedAt,
 				FullName = user.FullName,
-				Phone = user.Phone
+				Phone = user.PhoneNumber
 			};
 		}
 
