@@ -61,6 +61,8 @@ namespace BusRejserLibrary.Repositories
 
 			existing.Title = rejse.Title;
 			existing.Destination = rejse.Destination;
+			existing.Country = rejse.Country;
+			existing.City = rejse.City;
 			existing.StartAt = rejse.StartAt;
 			existing.EndAt = rejse.EndAt;
 			existing.Price = rejse.Price;

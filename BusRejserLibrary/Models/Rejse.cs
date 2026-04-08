@@ -7,6 +7,8 @@ namespace BusRejserLibrary.Models
 		public int RejseId { get; set; }
 		public string Title { get; set; }
 		public string Destination { get; set; }
+		public string Country { get; set; }
+		public string City { get; set; }
 		public DateTime StartAt { get; set; }
 		public DateTime EndAt { get; set; }
 		public decimal Price { get; set; }
@@ -26,6 +28,8 @@ namespace BusRejserLibrary.Models
 		private Rejse(
 			string title,
 			string destination,
+			string country,
+			string city,
 			DateTime startAt,
 			DateTime endAt,
 			decimal price,
@@ -39,6 +43,8 @@ namespace BusRejserLibrary.Models
 		{
 			Title = title;
 			Destination = destination;
+			Country = country;
+			City = city;
 			StartAt = startAt;
 			EndAt = endAt;
 			Price = price;
@@ -56,6 +62,8 @@ namespace BusRejserLibrary.Models
 		public static Rejse Create(
 			string title,
 			string destination,
+			string country,
+			string city,
 			DateTime startAt,
 			DateTime endAt,
 			decimal price,
@@ -88,6 +96,8 @@ namespace BusRejserLibrary.Models
 			return new Rejse(
 				title.Trim(),
 				destination.Trim(),
+				country.Trim(),
+				city.Trim(),
 				startAt,
 				endAt,
 				price,

@@ -46,6 +46,8 @@ namespace BusRejser.Controllers
 			var rejse = Rejse.Create(
 			request.Title,
 			request.Destination,
+			request.Country,
+			request.City,
 			request.StartAt,
 			request.EndAt,
 			request.Price,
@@ -77,6 +79,8 @@ namespace BusRejser.Controllers
 			var rejse = Rejse.Create(
 				request.Title,
 				request.Destination,
+				request.Country,
+				request.City,
 				request.StartAt,
 				request.EndAt,
 				request.Price,
@@ -91,6 +95,31 @@ namespace BusRejser.Controllers
 
 			_service.Update(id, rejse);
 			return Ok();
+		}
+
+		[HttpGet("public")]
+		[AllowAnonymous]
+		public ActionResult<IEnumerable<RejseResponse>> GetPublic()
+		{
+			var now = DateTime.UtcNow;
+
+			var rejser = _service.GetAll()
+				.Where(r => r.IsPublished && r.StartAt > now)
+				.Select(RejseMapper.ToResponse);
+
+			return Ok(rejser);
+		}
+
+		[HttpGet("public/{id:int}")]
+		[AllowAnonymous]
+		public ActionResult<RejseResponse> GetPublicById(int id)
+		{
+			var rejse = _service.GetById(id);
+
+			if (rejse == null || !rejse.IsPublished)
+				return NotFound();
+
+			return Ok(RejseMapper.ToResponse(rejse));
 		}
 	}
 }

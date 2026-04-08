@@ -12,6 +12,8 @@ namespace BusRejser.Mappers
 				RejseId = r.RejseId,
 				Title = r.Title,
 				Destination = r.Destination,
+				Country = r.Country,
+				City = r.City,
 				StartAt = r.StartAt,
 				EndAt = r.EndAt,
 				Price = r.Price,
