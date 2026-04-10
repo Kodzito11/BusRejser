@@ -1,4 +1,5 @@
 using BusRejser.Middleware;
+using BusRejser.Options;
 using BusRejser.Services;
 using BusRejserLibrary.Database;
 using BusRejserLibrary.Repositories;
@@ -61,13 +62,29 @@ var stripeSecret = builder.Configuration["Stripe:SecretKey"];
 if (string.IsNullOrWhiteSpace(stripeSecret))
 	throw new Exception("Stripe:SecretKey mangler.");
 
-// CORS
+var corsOptions = builder.Configuration
+	.GetSection(CorsOptions.SectionName)
+	.Get<CorsOptions>() ?? new CorsOptions();
+
+builder.Services.AddOptions<CorsOptions>()
+	.Bind(builder.Configuration.GetSection(CorsOptions.SectionName))
+	.Validate(options => options.AllowedOrigins.Count > 0, "Cors:AllowedOrigins skal indeholde mindst én origin.")
+	.Validate(options => options.AllowedOrigins.All(IsValidAbsoluteHttpUrl), "Alle Cors:AllowedOrigins skal være gyldige absolute http/https URLs.")
+	.ValidateOnStart();
+
+builder.Services.AddOptions<FrontendOptions>()
+	.Bind(builder.Configuration.GetSection(FrontendOptions.SectionName))
+	.Validate(options => IsValidAbsoluteHttpUrl(options.BaseUrl), "Frontend:BaseUrl skal være en gyldig absolute http/https URL.")
+	.Validate(options => !string.IsNullOrWhiteSpace(options.PaymentSuccessPath), "Frontend:PaymentSuccessPath mangler.")
+	.Validate(options => !string.IsNullOrWhiteSpace(options.PaymentCancelPath), "Frontend:PaymentCancelPath mangler.")
+	.ValidateOnStart();
+
 builder.Services.AddCors(options =>
 {
-	options.AddPolicy("dev", p =>
-		p.AllowAnyOrigin()
-		 .AllowAnyHeader()
-		 .AllowAnyMethod());
+	options.AddPolicy("frontend", policy =>
+		policy.WithOrigins(corsOptions.AllowedOrigins.ToArray())
+			.AllowAnyHeader()
+			.AllowAnyMethod());
 });
 
 // JWT
@@ -149,7 +166,7 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-app.UseCors("dev");
+app.UseCors("frontend");
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -157,3 +174,9 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static bool IsValidAbsoluteHttpUrl(string? url)
+{
+	return Uri.TryCreate(url, UriKind.Absolute, out var uri)
+		&& (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+}

@@ -1,4 +1,5 @@
 using BusRejser.DTOs;
+using BusRejser.Options;
 using BusRejser.Services;
 using BusRejserLibrary.Database;
 using BusRejserLibrary.Enums;
@@ -8,6 +9,7 @@ using BusRejserLibrary.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Stripe.Checkout;
 using Xunit;
@@ -16,6 +18,65 @@ namespace BusPlanen.Tests;
 
 public class StripeBookingFlowTests
 {
+	[Fact]
+	public void CreateCheckoutSession_UsesConfiguredFrontendBaseUrl_ForStripeRedirects()
+	{
+		using var context = CreateContext();
+
+		context.Rejser.Add(CreateValidRejseEntity(1));
+		context.SaveChanges();
+
+		var bookingRepo = new Mock<IBookingRepository>();
+		var rejseRepo = new Mock<IRejseRepository>();
+		var userRepo = new Mock<IUserRepository>();
+		var bookingLogger = new Mock<ILogger<BookingService>>();
+		var stripeLogger = new Mock<ILogger<StripeService>>();
+		var stripeClient = new Mock<IStripeCheckoutSessionClient>();
+
+		SessionCreateOptions? capturedOptions = null;
+
+		stripeClient
+			.Setup(x => x.Create(It.IsAny<SessionCreateOptions>()))
+			.Callback<SessionCreateOptions>(options => capturedOptions = options)
+			.Returns(new Session
+			{
+				Id = "sess_123",
+				Url = "https://checkout.stripe.test/session"
+			});
+
+		var bookingService = CreateBookingService(bookingRepo, rejseRepo, userRepo, bookingLogger);
+		var stripeService = new StripeService(
+			new RejseRepository(context),
+			bookingService,
+			stripeClient.Object,
+			Options.Create(new FrontendOptions
+			{
+				BaseUrl = "https://frontend.example.com",
+				PaymentSuccessPath = "/betaling/success",
+				PaymentCancelPath = "/betaling/cancel"
+			}),
+			CreateStripeConfig(),
+			stripeLogger.Object
+		);
+
+		var url = stripeService.CreateCheckoutSession(new CreateCheckoutSessionRequest
+		{
+			RejseId = 1,
+			AntalPladser = 2,
+			KundeNavn = "Test User",
+			KundeEmail = "test@test.dk"
+		}, userId: null);
+
+		Assert.Equal("https://checkout.stripe.test/session", url);
+		Assert.NotNull(capturedOptions);
+		Assert.Equal(
+			"https://frontend.example.com/betaling/success?session_id={CHECKOUT_SESSION_ID}",
+			capturedOptions!.SuccessUrl);
+		Assert.Equal(
+			"https://frontend.example.com/betaling/cancel",
+			capturedOptions.CancelUrl);
+	}
+
 	[Fact]
 	public void CreateFromStripe_DoesNothing_WhenDuplicateBookingAppearsDuringConcurrentCreate()
 	{
@@ -101,6 +162,12 @@ public class StripeBookingFlowTests
 			new RejseRepository(context),
 			bookingService,
 			stripeClient.Object,
+			Options.Create(new FrontendOptions
+			{
+				BaseUrl = "https://frontend.test",
+				PaymentSuccessPath = "/betaling/success",
+				PaymentCancelPath = "/betaling/cancel"
+			}),
 			CreateStripeConfig(),
 			stripeLogger.Object
 		);
@@ -148,6 +215,29 @@ public class StripeBookingFlowTests
 
 		rejse.RejseId = rejseId;
 		rejse.BookedSeats = bookedSeats;
+		return rejse;
+	}
+
+	private static Rejse CreateValidRejseEntity(int rejseId, int maxSeats = 50)
+	{
+		var rejse = Rejse.Create(
+			"Test",
+			"Copenhagen",
+			"Denmark",
+			"Copenhagen",
+			DateTime.UtcNow.AddDays(2),
+			DateTime.UtcNow.AddDays(3),
+			100m,
+			maxSeats,
+			null,
+			null,
+			null,
+			null,
+			false,
+			true
+		);
+
+		rejse.RejseId = rejseId;
 		return rejse;
 	}
 

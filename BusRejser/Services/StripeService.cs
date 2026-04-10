@@ -1,7 +1,9 @@
 ﻿using BusRejser.DTOs;
 using BusRejser.Exceptions;
+using BusRejser.Options;
 using BusRejserLibrary.Repositories;
 using BusRejserLibrary.Services;
+using Microsoft.Extensions.Options;
 using Stripe;
 using Stripe.Checkout;
 
@@ -12,6 +14,7 @@ namespace BusRejser.Services
 		private readonly RejseRepository _rejseRepository;
 		private readonly BookingService _bookingService;
 		private readonly IStripeCheckoutSessionClient _stripeCheckoutSessionClient;
+		private readonly FrontendOptions _frontendOptions;
 		private readonly IConfiguration _configuration;
 		private readonly ILogger<StripeService> _logger;
 
@@ -19,12 +22,14 @@ namespace BusRejser.Services
 			RejseRepository rejseRepository,
 			BookingService bookingService,
 			IStripeCheckoutSessionClient stripeCheckoutSessionClient,
+			IOptions<FrontendOptions> frontendOptions,
 			IConfiguration configuration,
 			ILogger<StripeService> logger)
 		{
 			_rejseRepository = rejseRepository;
 			_bookingService = bookingService;
 			_stripeCheckoutSessionClient = stripeCheckoutSessionClient;
+			_frontendOptions = frontendOptions.Value;
 			_configuration = configuration;
 			_logger = logger;
 
@@ -41,8 +46,7 @@ namespace BusRejser.Services
 
 		public string CreateCheckoutSession(
 			CreateCheckoutSessionRequest request,
-			int? userId,
-			string origin)
+			int? userId)
 		{
 			if (request == null)
 			{
@@ -96,17 +100,20 @@ namespace BusRejser.Services
 				throw new ValidationException("Ugyldig pris på rejse.");
 			}
 
-			if (string.IsNullOrWhiteSpace(origin))
-			{
-				_logger.LogWarning("Origin was missing when creating Stripe checkout session. Falling back to localhost");
-				origin = "http://localhost:5173";
-			}
+			var successUrl = BuildFrontendUrl(
+				_frontendOptions.BaseUrl,
+				_frontendOptions.PaymentSuccessPath,
+				"session_id={CHECKOUT_SESSION_ID}");
+
+			var cancelUrl = BuildFrontendUrl(
+				_frontendOptions.BaseUrl,
+				_frontendOptions.PaymentCancelPath);
 
 			var options = new SessionCreateOptions
 			{
 				Mode = "payment",
-				SuccessUrl = $"{origin}/betaling/success?session_id={{CHECKOUT_SESSION_ID}}",
-				CancelUrl = $"{origin}/betaling/cancel",
+				SuccessUrl = successUrl,
+				CancelUrl = cancelUrl,
 				CustomerEmail = request.KundeEmail,
 				LineItems = new List<SessionLineItemOptions>
 				{
@@ -153,6 +160,20 @@ namespace BusRejser.Services
 			);
 
 			return session.Url;
+		}
+
+		private static string BuildFrontendUrl(string baseUrl, string path, string? query = null)
+		{
+			var trimmedBaseUrl = baseUrl.TrimEnd('/');
+			var normalizedPath = path.StartsWith('/') ? path : $"/{path}";
+			var url = $"{trimmedBaseUrl}{normalizedPath}";
+
+			if (!string.IsNullOrWhiteSpace(query))
+			{
+				url = $"{url}?{query}";
+			}
+
+			return url;
 		}
 
 		public void HandleWebhook(string json, string stripeSignature)

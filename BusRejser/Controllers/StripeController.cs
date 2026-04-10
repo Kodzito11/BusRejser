@@ -44,11 +44,7 @@ namespace BusRejser.Controllers
 					userId = parsedUserId;
 			}
 
-			var origin = Request.Headers.Origin.FirstOrDefault();
-			if (string.IsNullOrWhiteSpace(origin))
-				origin = "http://localhost:5173";
-
-			var url = _stripeService.CreateCheckoutSession(request, userId, origin);
+			var url = _stripeService.CreateCheckoutSession(request, userId);
 
 			_logger.LogInformation(
 				"Checkout session created successfully for RejseId {RejseId}",
