@@ -16,40 +16,59 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpPost("register")]
-		public IActionResult Register([FromBody] RegisterRequest request)
+		public ActionResult<RegisterResponse> Register([FromBody] RegisterRequest request)
 		{
 			var userId = _authService.Register(request.Username, request.Email, request.Password);
 
-			return Ok(new
+			return Ok(new RegisterResponse
 			{
-				message = "Bruger oprettet.",
-				userId
+				Message = "Bruger oprettet.",
+				UserId = userId
 			});
 		}
 
 		[HttpPost("login")]
-		public IActionResult Login([FromBody] LoginRequest request)
+		public ActionResult<AuthTokenResponse> Login([FromBody] LoginRequest request)
 		{
-			var token = _authService.Login(request.Email, request.Password);
+			var response = _authService.Login(request.Email, request.Password);
+			return Ok(response);
+		}
 
-			return Ok(new
+		[HttpPost("refresh")]
+		public ActionResult<AuthTokenResponse> Refresh([FromBody] RefreshTokenRequest request)
+		{
+			var response = _authService.Refresh(request.RefreshToken);
+			return Ok(response);
+		}
+
+		[HttpPost("logout")]
+		public ActionResult<AuthMessageResponse> Logout([FromBody] LogoutRequest request)
+		{
+			_authService.Logout(request.RefreshToken);
+			return Ok(new AuthMessageResponse
 			{
-				token
+				Message = "Session afsluttet."
 			});
 		}
 
 		[HttpPost("forgot-password")]
-		public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+		public async Task<ActionResult<AuthMessageResponse>> ForgotPassword([FromBody] ForgotPasswordRequest request)
 		{
 			await _authService.ForgotPassword(request.Email);
-			return Ok(new { message = "Hvis email findes, er link sendt." });
+			return Ok(new AuthMessageResponse
+			{
+				Message = "Hvis email findes, er link sendt."
+			});
 		}
 
 		[HttpPost("reset-password")]
-		public IActionResult ResetPassword([FromBody] ResetPasswordRequest request)
+		public ActionResult<AuthMessageResponse> ResetPassword([FromBody] ResetPasswordRequest request)
 		{
 			_authService.ResetPassword(request.Token, request.NewPassword);
-			return Ok(new { message = "Password opdateret." });
+			return Ok(new AuthMessageResponse
+			{
+				Message = "Password opdateret."
+			});
 		}
 	}
 }

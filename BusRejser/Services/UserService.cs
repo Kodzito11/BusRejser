@@ -8,11 +8,16 @@ namespace BusRejser.Services
 	{
 		private readonly UserRepository _userRepository;
 		private readonly PasswordService _passwordService;
+		private readonly RefreshTokenRepository _refreshTokenRepository;
 
-		public UserService(UserRepository userRepository, PasswordService passwordService)
+		public UserService(
+			UserRepository userRepository,
+			PasswordService passwordService,
+			RefreshTokenRepository refreshTokenRepository)
 		{
 			_userRepository = userRepository;
 			_passwordService = passwordService;
+			_refreshTokenRepository = refreshTokenRepository;
 		}
 
 		public UserProfileResponse GetMe(int userId)
@@ -95,6 +100,8 @@ namespace BusRejser.Services
 			var updated = _userRepository.Update(user);
 			if (!updated)
 				throw new ConflictException("Password kunne ikke opdateres.");
+
+			_refreshTokenRepository.RevokeAllForUser(user.UserId);
 		}
 	}
 }

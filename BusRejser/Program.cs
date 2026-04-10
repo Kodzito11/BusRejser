@@ -1,3 +1,6 @@
+using System.Text;
+using System.Text.Json;
+using BusRejser.DTOs;
 using BusRejser.Middleware;
 using BusRejser.Options;
 using BusRejser.Services;
@@ -8,7 +11,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -71,7 +73,14 @@ builder.Services.AddOptions<JwtOptions>()
 	.Bind(builder.Configuration.GetSection(JwtOptions.SectionName))
 	.Validate(options => !string.IsNullOrWhiteSpace(options.Secret), "Jwt:Secret mangler.")
 	.Validate(options => options.Secret.Trim().Length >= 32, "Jwt:Secret skal vaere mindst 32 tegn.")
-	.Validate(options => options.AccessTokenLifetimeHours > 0 && options.AccessTokenLifetimeHours <= 24, "Jwt:AccessTokenLifetimeHours skal vaere mellem 1 og 24.")
+	.Validate(options => !string.IsNullOrWhiteSpace(options.Issuer), "Jwt:Issuer mangler.")
+	.Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "Jwt:Audience mangler.")
+	.Validate(options => options.AccessTokenLifetimeMinutes is >= 5 and <= 120, "Jwt:AccessTokenLifetimeMinutes skal vaere mellem 5 og 120.")
+	.ValidateOnStart();
+
+builder.Services.AddOptions<AuthOptions>()
+	.Bind(builder.Configuration.GetSection(AuthOptions.SectionName))
+	.Validate(options => options.RefreshTokenLifetimeDays is >= 1 and <= 90, "Auth:RefreshTokenLifetimeDays skal vaere mellem 1 og 90.")
 	.ValidateOnStart();
 
 builder.Services.AddOptions<StripeOptions>()
@@ -100,6 +109,7 @@ builder.Services.AddOptions<FrontendOptions>()
 	.Validate(options => IsValidAbsoluteHttpUrl(options.BaseUrl), "Frontend:BaseUrl skal vaere en gyldig absolute http/https URL.")
 	.Validate(options => !string.IsNullOrWhiteSpace(options.PaymentSuccessPath), "Frontend:PaymentSuccessPath mangler.")
 	.Validate(options => !string.IsNullOrWhiteSpace(options.PaymentCancelPath), "Frontend:PaymentCancelPath mangler.")
+	.Validate(options => !string.IsNullOrWhiteSpace(options.PasswordResetPath), "Frontend:PasswordResetPath mangler.")
 	.ValidateOnStart();
 
 builder.Services.AddCors(options =>
@@ -115,11 +125,43 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 	{
 		options.TokenValidationParameters = new TokenValidationParameters
 		{
-			ValidateIssuer = false,
-			ValidateAudience = false,
+			ValidateIssuer = true,
+			ValidateAudience = true,
 			ValidateLifetime = true,
 			ValidateIssuerSigningKey = true,
-			IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret))
+			ValidIssuer = jwtOptions.Issuer,
+			ValidAudience = jwtOptions.Audience,
+			IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret)),
+			ClockSkew = TimeSpan.FromMinutes(1)
+		};
+
+		options.Events = new JwtBearerEvents
+		{
+			OnChallenge = async context =>
+			{
+				context.HandleResponse();
+				context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+				context.Response.ContentType = "application/json";
+
+				var payload = JsonSerializer.Serialize(new ErrorResponse
+				{
+					Message = "Ikke autoriseret."
+				});
+
+				await context.Response.WriteAsync(payload);
+			},
+			OnForbidden = async context =>
+			{
+				context.Response.StatusCode = StatusCodes.Status403Forbidden;
+				context.Response.ContentType = "application/json";
+
+				var payload = JsonSerializer.Serialize(new ErrorResponse
+				{
+					Message = "Adgang nægtet."
+				});
+
+				await context.Response.WriteAsync(payload);
+			}
 		};
 	});
 
@@ -144,6 +186,7 @@ builder.Services.AddScoped<BookingRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 
 builder.Services.AddScoped<PasswordResetTokenRepository>();
+builder.Services.AddScoped<RefreshTokenRepository>();
 
 builder.Services.AddScoped<BusService>();
 builder.Services.AddScoped<FacilitetService>();

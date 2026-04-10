@@ -67,6 +67,8 @@ Koer fra repo-roden:
 ```powershell
 dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "ConnectionStrings:DefaultConnection" "server=localhost;port=3307;database=busplanen;user=bususer;password=replace-me;"
 dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Jwt:Secret" "replace-with-at-least-32-characters"
+dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Jwt:Issuer" "BusPlanen.Api"
+dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Jwt:Audience" "BusPlanen.Client"
 dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Stripe:SecretKey" "replace-with-stripe-secret-key"
 dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Stripe:WebhookSecret" "replace-with-stripe-webhook-secret"
 dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Email:Host" "sandbox.smtp.mailtrap.io"
@@ -83,6 +85,8 @@ ASP.NET Core mapper `__` til `:`.
 ```powershell
 $env:ConnectionStrings__DefaultConnection="server=localhost;port=3307;database=busplanen;user=bususer;password=replace-me;"
 $env:Jwt__Secret="replace-with-at-least-32-characters"
+$env:Jwt__Issuer="BusPlanen.Api"
+$env:Jwt__Audience="BusPlanen.Client"
 $env:Stripe__SecretKey="replace-with-stripe-secret-key"
 $env:Stripe__WebhookSecret="replace-with-stripe-webhook-secret"
 $env:Email__Host="sandbox.smtp.mailtrap.io"
@@ -100,6 +104,9 @@ Foelgende felter kan saettes i din lokale, ignorerede `appsettings.Development.j
 - `Frontend:BaseUrl`
 - `Frontend:PaymentSuccessPath`
 - `Frontend:PaymentCancelPath`
+- `Frontend:PasswordResetPath`
+- `Auth:RefreshTokenLifetimeDays`
+- `Auth:RequireConfirmedEmail`
 
 Du kan ogsaa laegge lokale dev-secrets der, hvis du bevidst vaelger den model. Det vigtige er, at filen ikke trackes i git.
 
@@ -134,7 +141,8 @@ Swagger er tilgaengelig i development:
 Applikationen failer nu ved startup hvis kritisk config mangler eller er ugyldig for:
 
 - database connection string
-- JWT secret
+- JWT secret, issuer og audience
+- refresh token lifetime og auth policy
 - Stripe secret og webhook secret
 - email host/credentials/from address
 - trusted CORS origins

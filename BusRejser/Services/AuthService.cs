@@ -1,6 +1,9 @@
-﻿using BusRejser.Exceptions;
+using BusRejser.DTOs;
+using BusRejser.Exceptions;
+using BusRejser.Options;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
+using Microsoft.Extensions.Options;
 
 namespace BusRejser.Services
 {
@@ -10,20 +13,29 @@ namespace BusRejser.Services
 		private readonly PasswordService _passwordService;
 		private readonly JwtService _jwtService;
 		private readonly PasswordResetTokenRepository _passwordResetTokenRepository;
+		private readonly RefreshTokenRepository _refreshTokenRepository;
 		private readonly EmailService _emailService;
+		private readonly FrontendOptions _frontendOptions;
+		private readonly AuthOptions _authOptions;
 
 		public AuthService(
 			UserRepository userRepository,
 			PasswordService passwordService,
 			JwtService jwtService,
 			PasswordResetTokenRepository passwordResetTokenRepository,
-			EmailService emailService)
+			RefreshTokenRepository refreshTokenRepository,
+			EmailService emailService,
+			IOptions<FrontendOptions> frontendOptions,
+			IOptions<AuthOptions> authOptions)
 		{
 			_userRepository = userRepository;
 			_passwordService = passwordService;
 			_jwtService = jwtService;
 			_passwordResetTokenRepository = passwordResetTokenRepository;
+			_refreshTokenRepository = refreshTokenRepository;
 			_emailService = emailService;
+			_frontendOptions = frontendOptions.Value;
+			_authOptions = authOptions.Value;
 		}
 
 		public int Register(string username, string email, string password)
@@ -63,7 +75,7 @@ namespace BusRejser.Services
 			return _userRepository.Create(user);
 		}
 
-		public string Login(string email, string password)
+		public AuthTokenResponse Login(string email, string password)
 		{
 			if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
 				throw new UnauthorizedException("Forkert email eller password.");
@@ -74,19 +86,72 @@ namespace BusRejser.Services
 			if (user == null)
 				throw new UnauthorizedException("Forkert email eller password.");
 
-			if (!user.IsActive)
-				throw new UnauthorizedException("Brugeren er deaktiveret.");
-
 			var isValid = _passwordService.VerifyPassword(password, user.PasswordHash);
 			if (!isValid)
 				throw new UnauthorizedException("Forkert email eller password.");
 
-			return _jwtService.GenerateToken(user);
+			EnsureUserCanAuthenticate(user);
+
+			user.LastLoginAt = DateTime.UtcNow;
+			var updated = _userRepository.Update(user);
+			if (!updated)
+				throw new ConflictException("Bruger kunne ikke opdateres.");
+
+			return IssueSession(user);
+		}
+
+		public AuthTokenResponse Refresh(string refreshToken)
+		{
+			if (string.IsNullOrWhiteSpace(refreshToken))
+				throw new UnauthorizedException("Refresh token mangler.");
+
+			var refreshTokenHash = Security.TokenHasher.Hash(refreshToken);
+			var existingToken = _refreshTokenRepository.GetByTokenHash(refreshTokenHash);
+
+			if (existingToken == null || !existingToken.IsActive)
+				throw new UnauthorizedException("Refresh token er ugyldig eller udløbet.");
+
+			var user = _userRepository.GetById(existingToken.UserId);
+			if (user == null)
+				throw new UnauthorizedException("Sessionen er ikke længere gyldig.");
+
+			EnsureUserCanAuthenticate(user);
+
+			var rawNewRefreshToken = _jwtService.GenerateRefreshToken();
+			var newRefreshTokenHash = Security.TokenHasher.Hash(rawNewRefreshToken);
+			var newRefreshToken = new RefreshToken
+			{
+				UserId = user.UserId,
+				TokenHash = newRefreshTokenHash,
+				CreatedAt = DateTime.UtcNow,
+				ExpiresAt = DateTime.UtcNow.AddDays(_authOptions.RefreshTokenLifetimeDays)
+			};
+
+			_refreshTokenRepository.Rotate(existingToken, newRefreshToken);
+
+			return BuildAuthTokenResponse(user, rawNewRefreshToken, newRefreshToken.ExpiresAt);
+		}
+
+		public void Logout(string refreshToken)
+		{
+			if (string.IsNullOrWhiteSpace(refreshToken))
+				return;
+
+			var refreshTokenHash = Security.TokenHasher.Hash(refreshToken);
+			var existingToken = _refreshTokenRepository.GetByTokenHash(refreshTokenHash);
+			if (existingToken == null || existingToken.RevokedAt != null)
+				return;
+
+			_refreshTokenRepository.Revoke(existingToken);
 		}
 
 		public async Task ForgotPassword(string email)
 		{
-			var user = _userRepository.GetByEmail(email);
+			if (string.IsNullOrWhiteSpace(email))
+				return;
+
+			var normalizedEmail = email.Trim().ToLowerInvariant();
+			var user = _userRepository.GetByEmail(normalizedEmail);
 
 			if (user == null)
 				return;
@@ -96,7 +161,7 @@ namespace BusRejser.Services
 			var rawToken = Guid.NewGuid().ToString();
 			var tokenHash = Security.TokenHasher.Hash(rawToken);
 
-			var token = new BusRejserLibrary.Models.PasswordResetToken
+			var token = new PasswordResetToken
 			{
 				UserId = user.UserId,
 				TokenHash = tokenHash,
@@ -106,21 +171,16 @@ namespace BusRejser.Services
 
 			_passwordResetTokenRepository.Create(token);
 
-			try
-			{
-				await _emailService.SendAsync(
-					user.Email,
-					"Nulstil password",
-					$"http://localhost:5173/reset-password?token={rawToken}"
-				);
+			var resetUrl = BuildFrontendUrl(
+				_frontendOptions.BaseUrl,
+				_frontendOptions.PasswordResetPath,
+				$"token={Uri.EscapeDataString(rawToken)}");
 
-				Console.WriteLine("MAIL SENDT OK");
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine("MAIL FEJL: " + ex.Message);
-				throw;
-			}
+			await _emailService.SendAsync(
+				user.Email,
+				"Nulstil password",
+				$"Aabn dette link for at nulstille dit password: {resetUrl}"
+			);
 		}
 
 		public void ResetPassword(string token, string newPassword)
@@ -151,6 +211,65 @@ namespace BusRejser.Services
 				throw new ConflictException("Password kunne ikke opdateres.");
 
 			_passwordResetTokenRepository.MarkAsUsed(resetToken.Id);
+			_refreshTokenRepository.RevokeAllForUser(user.UserId);
+		}
+
+		private AuthTokenResponse IssueSession(User user)
+		{
+			var rawRefreshToken = _jwtService.GenerateRefreshToken();
+			var refreshTokenHash = Security.TokenHasher.Hash(rawRefreshToken);
+			var refreshToken = new RefreshToken
+			{
+				UserId = user.UserId,
+				TokenHash = refreshTokenHash,
+				CreatedAt = DateTime.UtcNow,
+				ExpiresAt = DateTime.UtcNow.AddDays(_authOptions.RefreshTokenLifetimeDays)
+			};
+
+			_refreshTokenRepository.Create(refreshToken);
+
+			return BuildAuthTokenResponse(user, rawRefreshToken, refreshToken.ExpiresAt);
+		}
+
+		private AuthTokenResponse BuildAuthTokenResponse(User user, string rawRefreshToken, DateTime refreshTokenExpiresAt)
+		{
+			return new AuthTokenResponse
+			{
+				AccessToken = _jwtService.GenerateToken(user),
+				AccessTokenExpiresAt = _jwtService.GetAccessTokenExpiresAtUtc(),
+				RefreshToken = rawRefreshToken,
+				RefreshTokenExpiresAt = refreshTokenExpiresAt,
+				User = new AuthenticatedUserResponse
+				{
+					UserId = user.UserId,
+					Username = user.Username,
+					Email = user.Email,
+					Role = user.Role.ToString()
+				}
+			};
+		}
+
+		private void EnsureUserCanAuthenticate(User user)
+		{
+			if (!user.IsActive)
+				throw new UnauthorizedException("Brugeren er deaktiveret.");
+
+			if (_authOptions.RequireConfirmedEmail && !user.EmailConfirmed)
+				throw new UnauthorizedException("Din email er ikke bekræftet.");
+		}
+
+		private static string BuildFrontendUrl(string baseUrl, string path, string? query = null)
+		{
+			var trimmedBaseUrl = baseUrl.TrimEnd('/');
+			var normalizedPath = path.StartsWith('/') ? path : $"/{path}";
+			var url = $"{trimmedBaseUrl}{normalizedPath}";
+
+			if (!string.IsNullOrWhiteSpace(query))
+			{
+				url = $"{url}?{query}";
+			}
+
+			return url;
 		}
 	}
 }

@@ -5,6 +5,8 @@ namespace BusRejser.Options
 		public const string SectionName = "Jwt";
 
 		public string Secret { get; set; } = "";
-		public int AccessTokenLifetimeHours { get; set; } = 12;
+		public string Issuer { get; set; } = "";
+		public string Audience { get; set; } = "";
+		public int AccessTokenLifetimeMinutes { get; set; } = 60;
 	}
 }

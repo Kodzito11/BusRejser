@@ -16,6 +16,7 @@ namespace BusRejserLibrary.Database
 		public DbSet<Bus> Buses => Set<Bus>();
 		public DbSet<Facilitet> Faciliteter => Set<Facilitet>();
 		public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+		public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -27,12 +28,14 @@ namespace BusRejserLibrary.Database
 			modelBuilder.Entity<Bus>().ToTable("bus");
 			modelBuilder.Entity<Facilitet>().ToTable("facilitet");
 			modelBuilder.Entity<PasswordResetToken>().ToTable("password_reset_tokens");
+			modelBuilder.Entity<RefreshToken>().ToTable("refresh_tokens");
 
 			modelBuilder.Entity<User>().HasKey(x => x.UserId);
 			modelBuilder.Entity<Rejse>().HasKey(x => x.RejseId);
 			modelBuilder.Entity<Booking>().HasKey(x => x.BookingId);
 			modelBuilder.Entity<Facilitet>().HasKey(x => x.Id);
 			modelBuilder.Entity<PasswordResetToken>().HasKey(x => x.Id);
+			modelBuilder.Entity<RefreshToken>().HasKey(x => x.Id);
 
 			modelBuilder.Entity<User>(entity =>
 			{
@@ -81,6 +84,32 @@ namespace BusRejserLibrary.Database
 				.WithMany()
 				.HasForeignKey(x => x.UserId)
 				.OnDelete(DeleteBehavior.Cascade);
+
+			modelBuilder.Entity<RefreshToken>(entity =>
+			{
+				entity.Property(x => x.TokenHash)
+					.IsRequired()
+					.HasMaxLength(128);
+
+				entity.Property(x => x.ReplacedByTokenHash)
+					.HasMaxLength(128);
+
+				entity.Property(x => x.CreatedAt)
+					.IsRequired();
+
+				entity.Property(x => x.ExpiresAt)
+					.IsRequired();
+
+				entity.HasIndex(x => x.TokenHash)
+					.IsUnique();
+
+				entity.HasIndex(x => x.UserId);
+
+				entity.HasOne<User>()
+					.WithMany()
+					.HasForeignKey(x => x.UserId)
+					.OnDelete(DeleteBehavior.Cascade);
+			});
 
 			modelBuilder.Entity<Booking>(entity =>
 			{
