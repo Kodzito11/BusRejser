@@ -42,7 +42,7 @@ namespace BusRejserLibrary.Repositories
 		{
 			return _context.Users
 				.AsNoTracking()
-				.FirstOrDefault(x => x.FullName == username);
+				.FirstOrDefault(x => x.Username == username);
 		}
 
 		public List<User> GetAll()
@@ -62,11 +62,17 @@ namespace BusRejserLibrary.Repositories
 			if (existing == null)
 				return false;
 
+			existing.Username = user.Username;
 			existing.FullName = user.FullName;
 			existing.FirstName = user.FirstName;
 			existing.LastName = user.LastName;
 			existing.Email = user.Email;
 			existing.PhoneNumber = user.PhoneNumber;
+			existing.PasswordHash = user.PasswordHash;
+			existing.IsActive = user.IsActive;
+			existing.EmailConfirmed = user.EmailConfirmed;
+			existing.Role = user.Role;
+			existing.LastLoginAt = user.LastLoginAt;
 			existing.UpdatedAt = DateTime.UtcNow;
 			_context.SaveChanges();
 			return true;

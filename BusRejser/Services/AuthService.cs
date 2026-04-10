@@ -28,6 +28,18 @@ namespace BusRejser.Services
 
 		public int Register(string username, string email, string password)
 		{
+			if (string.IsNullOrWhiteSpace(username))
+				throw new ValidationException("Brugernavn kræves.");
+
+			if (string.IsNullOrWhiteSpace(email))
+				throw new ValidationException("Email kræves.");
+
+			if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+				throw new ValidationException("Password skal være mindst 8 tegn.");
+
+			username = username.Trim();
+			email = email.Trim().ToLowerInvariant();
+
 			var existingEmail = _userRepository.GetByEmail(email);
 			if (existingEmail != null)
 				throw new ConflictException("Email findes allerede.");
@@ -40,10 +52,12 @@ namespace BusRejser.Services
 
 			var user = new User
 			{
+				Username = username,
 				Email = email,
 				PasswordHash = passwordHash,
 				Role = BusRejserLibrary.Enums.UserRole.Kunde,
-				CreatedAt = DateTime.UtcNow
+				CreatedAt = DateTime.UtcNow,
+				UpdatedAt = DateTime.UtcNow
 			};
 
 			return _userRepository.Create(user);
@@ -51,9 +65,17 @@ namespace BusRejser.Services
 
 		public string Login(string email, string password)
 		{
+			if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+				throw new UnauthorizedException("Forkert email eller password.");
+
+			email = email.Trim().ToLowerInvariant();
+
 			var user = _userRepository.GetByEmail(email);
 			if (user == null)
 				throw new UnauthorizedException("Forkert email eller password.");
+
+			if (!user.IsActive)
+				throw new UnauthorizedException("Brugeren er deaktiveret.");
 
 			var isValid = _passwordService.VerifyPassword(password, user.PasswordHash);
 			if (!isValid)
@@ -103,6 +125,12 @@ namespace BusRejser.Services
 
 		public void ResetPassword(string token, string newPassword)
 		{
+			if (string.IsNullOrWhiteSpace(token))
+				throw new ValidationException("Token kræves.");
+
+			if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
+				throw new ValidationException("Password skal være mindst 8 tegn.");
+
 			var tokenHash = Security.TokenHasher.Hash(token);
 
 			var resetToken = _passwordResetTokenRepository.GetActiveByHash(tokenHash);
@@ -118,7 +146,10 @@ namespace BusRejser.Services
 
 			user.PasswordHash = _passwordService.HashPassword(newPassword);
 
-			_userRepository.Update(user);
+			var updated = _userRepository.Update(user);
+			if (!updated)
+				throw new ConflictException("Password kunne ikke opdateres.");
+
 			_passwordResetTokenRepository.MarkAsUsed(resetToken.Id);
 		}
 	}

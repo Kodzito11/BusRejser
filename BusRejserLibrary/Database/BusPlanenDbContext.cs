@@ -34,6 +34,60 @@ namespace BusRejserLibrary.Database
 			modelBuilder.Entity<Facilitet>().HasKey(x => x.Id);
 			modelBuilder.Entity<PasswordResetToken>().HasKey(x => x.Id);
 
+			modelBuilder.Entity<User>(entity =>
+			{
+				entity.Property(x => x.UserId)
+					.ValueGeneratedOnAdd();
+
+				entity.Property(x => x.Username)
+					.IsRequired()
+					.HasMaxLength(100);
+
+				entity.Property(x => x.FullName)
+					.HasMaxLength(200);
+
+				entity.Property(x => x.FirstName)
+					.HasMaxLength(100);
+
+				entity.Property(x => x.LastName)
+					.HasMaxLength(100);
+
+				entity.Property(x => x.Email)
+					.IsRequired()
+					.HasMaxLength(255);
+
+				entity.Property(x => x.PhoneNumber)
+					.HasMaxLength(30);
+
+				entity.Property(x => x.PasswordHash)
+					.IsRequired()
+					.HasMaxLength(512);
+
+				entity.Property(x => x.CreatedAt)
+					.IsRequired();
+
+				entity.Property(x => x.UpdatedAt)
+					.IsRequired();
+
+				entity.HasIndex(x => x.Username)
+					.IsUnique();
+
+				entity.HasIndex(x => x.Email)
+					.IsUnique();
+			});
+
+			modelBuilder.Entity<PasswordResetToken>()
+				.HasOne<User>()
+				.WithMany()
+				.HasForeignKey(x => x.UserId)
+				.OnDelete(DeleteBehavior.Cascade);
+
+			modelBuilder.Entity<Booking>()
+				.HasOne<User>()
+				.WithMany()
+				.HasForeignKey(x => x.UserId)
+				.OnDelete(DeleteBehavior.SetNull);
+
 			modelBuilder.Entity<Rejse>()
 				.Property(x => x.Version)
 				.IsConcurrencyToken();

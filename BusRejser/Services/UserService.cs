@@ -24,6 +24,7 @@ namespace BusRejser.Services
 			return new UserProfileResponse
 			{
 				UserId = user.UserId,
+				Username = user.Username,
 				Email = user.Email,
 				Role = user.Role.ToString(),
 				CreatedAt = user.CreatedAt,
@@ -38,23 +39,36 @@ namespace BusRejser.Services
 			if (user == null)
 				throw new NotFoundException("Bruger ikke fundet.");
 
-			var existingEmail = _userRepository.GetByEmail(request.Email);
+			if (string.IsNullOrWhiteSpace(request.Username))
+				throw new ValidationException("Brugernavn kræves.");
+
+			if (string.IsNullOrWhiteSpace(request.Email))
+				throw new ValidationException("Email kræves.");
+
+			var normalizedUsername = request.Username.Trim();
+			var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+
+			var existingEmail = _userRepository.GetByEmail(normalizedEmail);
 			if (existingEmail != null && existingEmail.UserId != userId)
 				throw new ConflictException("Email findes allerede.");
 
-			var existingUsername = _userRepository.GetByUsername(request.Username);
+			var existingUsername = _userRepository.GetByUsername(normalizedUsername);
 			if (existingUsername != null && existingUsername.UserId != userId)
 				throw new ConflictException("Brugernavn findes allerede.");
 
-			user.Email = request.Email.Trim();
+			user.Username = normalizedUsername;
+			user.Email = normalizedEmail;
 			user.FullName = string.IsNullOrWhiteSpace(request.FullName) ? null : request.FullName.Trim();
 			user.PhoneNumber = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim();
 
-			_userRepository.Update(user);
+			var updated = _userRepository.Update(user);
+			if (!updated)
+				throw new ConflictException("Bruger kunne ikke opdateres.");
 
 			return new UserProfileResponse
 			{
 				UserId = user.UserId,
+				Username = user.Username,
 				Email = user.Email,
 				Role = user.Role.ToString(),
 				CreatedAt = user.CreatedAt,
@@ -69,13 +83,18 @@ namespace BusRejser.Services
 			if (user == null)
 				throw new NotFoundException("Bruger ikke fundet.");
 
+			if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 8)
+				throw new ValidationException("Password skal være mindst 8 tegn.");
+
 			var isValid = _passwordService.VerifyPassword(request.CurrentPassword, user.PasswordHash);
 			if (!isValid)
 				throw new UnauthorizedException("Nuværende password er forkert.");
 
 			user.PasswordHash = _passwordService.HashPassword(request.NewPassword);
 
-			_userRepository.Update(user);
+			var updated = _userRepository.Update(user);
+			if (!updated)
+				throw new ConflictException("Password kunne ikke opdateres.");
 		}
 	}
 }
