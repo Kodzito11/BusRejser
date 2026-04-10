@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Threading.RateLimiting;
 using BusRejser.DTOs;
 using BusRejser.Middleware;
 using BusRejser.Options;
@@ -8,6 +9,7 @@ using BusRejserLibrary.Database;
 using BusRejserLibrary.Repositories;
 using BusRejserLibrary.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -64,6 +66,10 @@ var corsOptions = builder.Configuration
 	.GetSection(CorsOptions.SectionName)
 	.Get<CorsOptions>() ?? new CorsOptions();
 
+var rateLimitingOptions = builder.Configuration
+	.GetSection(RateLimitingOptions.SectionName)
+	.Get<RateLimitingOptions>() ?? new RateLimitingOptions();
+
 builder.Services.AddOptions<ConnectionStringOptions>()
 	.Bind(builder.Configuration.GetSection(ConnectionStringOptions.SectionName))
 	.Validate(options => !string.IsNullOrWhiteSpace(options.DefaultConnection), "ConnectionStrings:DefaultConnection mangler.")
@@ -112,12 +118,79 @@ builder.Services.AddOptions<FrontendOptions>()
 	.Validate(options => !string.IsNullOrWhiteSpace(options.PasswordResetPath), "Frontend:PasswordResetPath mangler.")
 	.ValidateOnStart();
 
+builder.Services.AddOptions<RateLimitingOptions>()
+	.Bind(builder.Configuration.GetSection(RateLimitingOptions.SectionName))
+	.Validate(options => IsValidRateLimitPolicy(options.Login), "RateLimiting:Login er ugyldig.")
+	.Validate(options => IsValidRateLimitPolicy(options.Register), "RateLimiting:Register er ugyldig.")
+	.Validate(options => IsValidRateLimitPolicy(options.ForgotPassword), "RateLimiting:ForgotPassword er ugyldig.")
+	.Validate(options => IsValidRateLimitPolicy(options.ResetPassword), "RateLimiting:ResetPassword er ugyldig.")
+	.Validate(options => IsValidRateLimitPolicy(options.RefreshToken), "RateLimiting:RefreshToken er ugyldig.")
+	.Validate(options => IsValidRateLimitPolicy(options.CheckoutCreate), "RateLimiting:CheckoutCreate er ugyldig.")
+	.Validate(options => IsValidRateLimitPolicy(options.CheckoutStatus), "RateLimiting:CheckoutStatus er ugyldig.")
+	.ValidateOnStart();
+
 builder.Services.AddCors(options =>
 {
 	options.AddPolicy("frontend", policy =>
 		policy.WithOrigins(corsOptions.AllowedOrigins.ToArray())
 			.AllowAnyHeader()
 			.AllowAnyMethod());
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+	options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+	options.OnRejected = async (context, cancellationToken) =>
+	{
+		context.HttpContext.Response.ContentType = "application/json";
+
+		if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+		{
+			context.HttpContext.Response.Headers.RetryAfter = Math.Ceiling(retryAfter.TotalSeconds).ToString();
+		}
+
+		var payload = JsonSerializer.Serialize(new ErrorResponse
+		{
+			Message = "For mange forespoergsler. Proev igen senere."
+		});
+
+		await context.HttpContext.Response.WriteAsync(payload, cancellationToken);
+	};
+
+	options.AddPolicy("auth-login", context => CreatePerClientLimiter(
+		context,
+		rateLimitingOptions.Login,
+		"auth-login"));
+
+	options.AddPolicy("auth-register", context => CreatePerClientLimiter(
+		context,
+		rateLimitingOptions.Register,
+		"auth-register"));
+
+	options.AddPolicy("auth-forgot-password", context => CreatePerClientLimiter(
+		context,
+		rateLimitingOptions.ForgotPassword,
+		"auth-forgot-password"));
+
+	options.AddPolicy("auth-reset-password", context => CreatePerClientLimiter(
+		context,
+		rateLimitingOptions.ResetPassword,
+		"auth-reset-password"));
+
+	options.AddPolicy("auth-refresh", context => CreatePerClientLimiter(
+		context,
+		rateLimitingOptions.RefreshToken,
+		"auth-refresh"));
+
+	options.AddPolicy("payment-checkout-create", context => CreatePerClientLimiter(
+		context,
+		rateLimitingOptions.CheckoutCreate,
+		"payment-checkout-create"));
+
+	options.AddPolicy("payment-checkout-status", context => CreatePerClientLimiter(
+		context,
+		rateLimitingOptions.CheckoutStatus,
+		"payment-checkout-status"));
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -157,7 +230,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 				var payload = JsonSerializer.Serialize(new ErrorResponse
 				{
-					Message = "Adgang nægtet."
+					Message = "Adgang naegtet."
 				});
 
 				await context.Response.WriteAsync(payload);
@@ -229,6 +302,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("frontend");
+app.UseRateLimiter();
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -241,4 +315,41 @@ static bool IsValidAbsoluteHttpUrl(string? url)
 {
 	return Uri.TryCreate(url, UriKind.Absolute, out var uri)
 		&& (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+}
+
+static bool IsValidRateLimitPolicy(RateLimitPolicyOptions options)
+{
+	return options.PermitLimit > 0
+		&& options.WindowSeconds > 0
+		&& options.QueueLimit >= 0;
+}
+
+static RateLimitPartition<string> CreatePerClientLimiter(
+	HttpContext context,
+	RateLimitPolicyOptions policy,
+	string policyName)
+{
+	var partitionKey = $"{policyName}:{GetRateLimitClientKey(context)}";
+
+	return RateLimitPartition.GetFixedWindowLimiter(
+		partitionKey,
+		_ => new FixedWindowRateLimiterOptions
+		{
+			PermitLimit = policy.PermitLimit,
+			Window = TimeSpan.FromSeconds(policy.WindowSeconds),
+			QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+			QueueLimit = policy.QueueLimit,
+			AutoReplenishment = true
+		});
+}
+
+static string GetRateLimitClientKey(HttpContext context)
+{
+	var authenticatedUserId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+	if (!string.IsNullOrWhiteSpace(authenticatedUserId))
+	{
+		return $"user:{authenticatedUserId}";
+	}
+
+	return $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
 }

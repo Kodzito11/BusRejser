@@ -1,8 +1,9 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using BusRejser.DTOs;
 using BusRejser.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace BusRejser.Controllers
 {
@@ -21,6 +22,7 @@ namespace BusRejser.Controllers
 
 		[HttpPost("create-checkout-session")]
 		[AllowAnonymous]
+		[EnableRateLimiting("payment-checkout-create")]
 		public ActionResult CreateCheckoutSession([FromBody] CreateCheckoutSessionRequest request)
 		{
 			if (request == null)
@@ -78,6 +80,7 @@ namespace BusRejser.Controllers
 
 		[HttpGet("checkout-status")]
 		[AllowAnonymous]
+		[EnableRateLimiting("payment-checkout-status")]
 		public ActionResult<CheckoutStatusResponse> GetCheckoutStatus([FromQuery] string sessionId)
 		{
 			if (string.IsNullOrWhiteSpace(sessionId))

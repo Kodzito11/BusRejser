@@ -112,6 +112,23 @@ Du kan ogsaa laegge lokale dev-secrets der, hvis du bevidst vaelger den model. D
 
 Disse bruges til trusted frontend-origin og Stripe redirects.
 
+## Rate limiting
+
+Foelsomme endpoints er beskyttet med ASP.NET Cores indbyggede rate limiter.
+
+Beskyttede endpoints:
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
+- `POST /api/stripe/create-checkout-session`
+- `GET /api/stripe/checkout-status`
+
+Limits styres via `RateLimiting`-sektionen i config og kan saettes forskelligt i development og production.
+Webhook-endpointet er ikke rate limited, saa Stripe ikke bliver blokeret af legitime retries.
+
 ## Database med Docker Compose
 
 `docker-compose.yml` bruger nu environment variables i stedet for haardkodede passwords.

@@ -1,6 +1,7 @@
-﻿using BusRejser.DTOs;
+using BusRejser.DTOs;
 using BusRejser.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace BusRejser.Controllers
 {
@@ -16,6 +17,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpPost("register")]
+		[EnableRateLimiting("auth-register")]
 		public ActionResult<RegisterResponse> Register([FromBody] RegisterRequest request)
 		{
 			var userId = _authService.Register(request.Username, request.Email, request.Password);
@@ -28,6 +30,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpPost("login")]
+		[EnableRateLimiting("auth-login")]
 		public ActionResult<AuthTokenResponse> Login([FromBody] LoginRequest request)
 		{
 			var response = _authService.Login(request.Email, request.Password);
@@ -35,6 +38,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpPost("refresh")]
+		[EnableRateLimiting("auth-refresh")]
 		public ActionResult<AuthTokenResponse> Refresh([FromBody] RefreshTokenRequest request)
 		{
 			var response = _authService.Refresh(request.RefreshToken);
@@ -52,6 +56,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpPost("forgot-password")]
+		[EnableRateLimiting("auth-forgot-password")]
 		public async Task<ActionResult<AuthMessageResponse>> ForgotPassword([FromBody] ForgotPasswordRequest request)
 		{
 			await _authService.ForgotPassword(request.Email);
@@ -62,6 +67,7 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpPost("reset-password")]
+		[EnableRateLimiting("auth-reset-password")]
 		public ActionResult<AuthMessageResponse> ResetPassword([FromBody] ResetPasswordRequest request)
 		{
 			_authService.ResetPassword(request.Token, request.NewPassword);
