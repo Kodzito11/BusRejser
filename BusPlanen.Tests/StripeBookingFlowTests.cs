@@ -7,7 +7,6 @@ using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
 using BusRejserLibrary.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -55,7 +54,7 @@ public class StripeBookingFlowTests
 				PaymentSuccessPath = "/betaling/success",
 				PaymentCancelPath = "/betaling/cancel"
 			}),
-			CreateStripeConfig(),
+			CreateStripeOptions(),
 			stripeLogger.Object
 		);
 
@@ -168,7 +167,7 @@ public class StripeBookingFlowTests
 				PaymentSuccessPath = "/betaling/success",
 				PaymentCancelPath = "/betaling/cancel"
 			}),
-			CreateStripeConfig(),
+			CreateStripeOptions(),
 			stripeLogger.Object
 		);
 
@@ -241,15 +240,13 @@ public class StripeBookingFlowTests
 		return rejse;
 	}
 
-	private static IConfiguration CreateStripeConfig()
+	private static IOptions<StripeOptions> CreateStripeOptions()
 	{
-		return new ConfigurationBuilder()
-			.AddInMemoryCollection(new Dictionary<string, string?>
-			{
-				["Stripe:SecretKey"] = "sk_test_1234567890",
-				["Stripe:WebhookSecret"] = "whsec_test_1234567890"
-			})
-			.Build();
+		return Options.Create(new StripeOptions
+		{
+			SecretKey = "sk_test_1234567890",
+			WebhookSecret = "whsec_test_1234567890"
+		});
 	}
 
 	private static BusPlanenDbContext CreateContext()

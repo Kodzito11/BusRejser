@@ -5,10 +5,10 @@ using BusRejserLibrary.Database;
 using BusRejserLibrary.Repositories;
 using BusRejserLibrary.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,31 +50,54 @@ builder.Services.AddSwaggerGen(options =>
 	});
 });
 
-var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
-if (string.IsNullOrWhiteSpace(connStr))
-	throw new Exception("Connection string 'DefaultConnection' mangler.");
+var connectionStringOptions = builder.Configuration
+	.GetSection(ConnectionStringOptions.SectionName)
+	.Get<ConnectionStringOptions>() ?? new ConnectionStringOptions();
 
-var jwtSecret = builder.Configuration["Jwt:Secret"];
-if (string.IsNullOrWhiteSpace(jwtSecret))
-	throw new Exception("Jwt:Secret mangler.");
-
-var stripeSecret = builder.Configuration["Stripe:SecretKey"];
-if (string.IsNullOrWhiteSpace(stripeSecret))
-	throw new Exception("Stripe:SecretKey mangler.");
+var jwtOptions = builder.Configuration
+	.GetSection(JwtOptions.SectionName)
+	.Get<JwtOptions>() ?? new JwtOptions();
 
 var corsOptions = builder.Configuration
 	.GetSection(CorsOptions.SectionName)
 	.Get<CorsOptions>() ?? new CorsOptions();
 
+builder.Services.AddOptions<ConnectionStringOptions>()
+	.Bind(builder.Configuration.GetSection(ConnectionStringOptions.SectionName))
+	.Validate(options => !string.IsNullOrWhiteSpace(options.DefaultConnection), "ConnectionStrings:DefaultConnection mangler.")
+	.ValidateOnStart();
+
+builder.Services.AddOptions<JwtOptions>()
+	.Bind(builder.Configuration.GetSection(JwtOptions.SectionName))
+	.Validate(options => !string.IsNullOrWhiteSpace(options.Secret), "Jwt:Secret mangler.")
+	.Validate(options => options.Secret.Trim().Length >= 32, "Jwt:Secret skal vaere mindst 32 tegn.")
+	.Validate(options => options.AccessTokenLifetimeHours > 0 && options.AccessTokenLifetimeHours <= 24, "Jwt:AccessTokenLifetimeHours skal vaere mellem 1 og 24.")
+	.ValidateOnStart();
+
+builder.Services.AddOptions<StripeOptions>()
+	.Bind(builder.Configuration.GetSection(StripeOptions.SectionName))
+	.Validate(options => !string.IsNullOrWhiteSpace(options.SecretKey), "Stripe:SecretKey mangler.")
+	.Validate(options => !string.IsNullOrWhiteSpace(options.WebhookSecret), "Stripe:WebhookSecret mangler.")
+	.ValidateOnStart();
+
+builder.Services.AddOptions<EmailOptions>()
+	.Bind(builder.Configuration.GetSection(EmailOptions.SectionName))
+	.Validate(options => !string.IsNullOrWhiteSpace(options.Host), "Email:Host mangler.")
+	.Validate(options => options.Port is > 0 and <= 65535, "Email:Port skal vaere mellem 1 og 65535.")
+	.Validate(options => !string.IsNullOrWhiteSpace(options.Username), "Email:Username mangler.")
+	.Validate(options => !string.IsNullOrWhiteSpace(options.Password), "Email:Password mangler.")
+	.Validate(options => !string.IsNullOrWhiteSpace(options.From), "Email:From mangler.")
+	.ValidateOnStart();
+
 builder.Services.AddOptions<CorsOptions>()
 	.Bind(builder.Configuration.GetSection(CorsOptions.SectionName))
-	.Validate(options => options.AllowedOrigins.Count > 0, "Cors:AllowedOrigins skal indeholde mindst én origin.")
-	.Validate(options => options.AllowedOrigins.All(IsValidAbsoluteHttpUrl), "Alle Cors:AllowedOrigins skal være gyldige absolute http/https URLs.")
+	.Validate(options => options.AllowedOrigins.Count > 0, "Cors:AllowedOrigins skal indeholde mindst en origin.")
+	.Validate(options => options.AllowedOrigins.All(IsValidAbsoluteHttpUrl), "Alle Cors:AllowedOrigins skal vaere gyldige absolute http/https URLs.")
 	.ValidateOnStart();
 
 builder.Services.AddOptions<FrontendOptions>()
 	.Bind(builder.Configuration.GetSection(FrontendOptions.SectionName))
-	.Validate(options => IsValidAbsoluteHttpUrl(options.BaseUrl), "Frontend:BaseUrl skal være en gyldig absolute http/https URL.")
+	.Validate(options => IsValidAbsoluteHttpUrl(options.BaseUrl), "Frontend:BaseUrl skal vaere en gyldig absolute http/https URL.")
 	.Validate(options => !string.IsNullOrWhiteSpace(options.PaymentSuccessPath), "Frontend:PaymentSuccessPath mangler.")
 	.Validate(options => !string.IsNullOrWhiteSpace(options.PaymentCancelPath), "Frontend:PaymentCancelPath mangler.")
 	.ValidateOnStart();
@@ -87,7 +110,6 @@ builder.Services.AddCors(options =>
 			.AllowAnyMethod());
 });
 
-// JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 	.AddJwtBearer(options =>
 	{
@@ -97,18 +119,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 			ValidateAudience = false,
 			ValidateLifetime = true,
 			ValidateIssuerSigningKey = true,
-			IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+			IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret))
 		};
 	});
 
-// DbContext
 builder.Services.AddDbContext<BusPlanenDbContext>(options =>
 	options.UseMySql(
-		builder.Configuration.GetConnectionString("DefaultConnection"),
-		ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
-	));
+		connectionStringOptions.DefaultConnection,
+		ServerVersion.AutoDetect(connectionStringOptions.DefaultConnection))
+);
 
-// Repositories
 builder.Services.AddScoped<BusRepository>();
 
 builder.Services.AddScoped<UserRepository>();
@@ -125,12 +145,11 @@ builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 
 builder.Services.AddScoped<PasswordResetTokenRepository>();
 
-// Services
 builder.Services.AddScoped<BusService>();
 builder.Services.AddScoped<FacilitetService>();
 builder.Services.AddScoped<RejseService>();
 builder.Services.AddScoped<PasswordService>();
-builder.Services.AddScoped(_ => new JwtService(jwtSecret));
+builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<IStripeCheckoutSessionClient, StripeCheckoutSessionClient>();

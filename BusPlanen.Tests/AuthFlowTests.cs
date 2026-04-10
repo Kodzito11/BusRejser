@@ -1,11 +1,12 @@
 using BusRejser.DTOs;
+using BusRejser.Options;
 using BusRejser.Security;
 using BusRejser.Services;
 using BusRejserLibrary.Database;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace BusPlanen.Tests;
@@ -100,23 +101,23 @@ public class AuthFlowTests
 
 	private static AuthService CreateAuthService(BusPlanenDbContext context)
 	{
-		var config = new ConfigurationBuilder()
-			.AddInMemoryCollection(new Dictionary<string, string?>
-			{
-				["Email:From"] = "noreply@test.local",
-				["Email:Host"] = "localhost",
-				["Email:Port"] = "25",
-				["Email:Username"] = "test",
-				["Email:Password"] = "test"
-			})
-			.Build();
-
 		return new AuthService(
 			new UserRepository(context),
 			new PasswordService(),
-			new JwtService("test_secret_that_is_long_enough_for_unit_tests"),
+			new JwtService(Options.Create(new JwtOptions
+			{
+				Secret = "test_secret_that_is_long_enough_for_unit_tests",
+				AccessTokenLifetimeHours = 12
+			})),
 			new PasswordResetTokenRepository(context),
-			new EmailService(config)
+			new EmailService(Options.Create(new EmailOptions
+			{
+				From = "noreply@test.local",
+				Host = "localhost",
+				Port = 25,
+				Username = "test",
+				Password = "test"
+			}))
 		);
 	}
 

@@ -2,22 +2,24 @@
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using BusRejser.Options;
 using BusRejserLibrary.Models;
+using Microsoft.Extensions.Options;
 
 namespace BusRejser.Services
 {
 	public class JwtService
 	{
-		private readonly string _secret;
+		private readonly JwtOptions _jwtOptions;
 
-		public JwtService(string secret)
+		public JwtService(IOptions<JwtOptions> jwtOptions)
 		{
-			_secret = secret;
+			_jwtOptions = jwtOptions.Value;
 		}
 
 		public string GenerateToken(User user)
 		{
-			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
+			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.Secret));
 			var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
 			var claims = new[]
@@ -29,7 +31,7 @@ namespace BusRejser.Services
 
 			var token = new JwtSecurityToken(
 				claims: claims,
-				expires: DateTime.UtcNow.AddHours(12),
+				expires: DateTime.UtcNow.AddHours(_jwtOptions.AccessTokenLifetimeHours),
 				signingCredentials: creds
 			);
 

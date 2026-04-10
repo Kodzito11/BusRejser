@@ -4,6 +4,7 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>BusRejser-0c5f3fb3-5a78-4fdd-9e68-5570ca9b4e13</UserSecretsId>
 	</PropertyGroup>
 
 	<ItemGroup>

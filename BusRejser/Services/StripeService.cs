@@ -15,7 +15,7 @@ namespace BusRejser.Services
 		private readonly BookingService _bookingService;
 		private readonly IStripeCheckoutSessionClient _stripeCheckoutSessionClient;
 		private readonly FrontendOptions _frontendOptions;
-		private readonly IConfiguration _configuration;
+		private readonly StripeOptions _stripeOptions;
 		private readonly ILogger<StripeService> _logger;
 
 		public StripeService(
@@ -23,24 +23,17 @@ namespace BusRejser.Services
 			BookingService bookingService,
 			IStripeCheckoutSessionClient stripeCheckoutSessionClient,
 			IOptions<FrontendOptions> frontendOptions,
-			IConfiguration configuration,
+			IOptions<StripeOptions> stripeOptions,
 			ILogger<StripeService> logger)
 		{
 			_rejseRepository = rejseRepository;
 			_bookingService = bookingService;
 			_stripeCheckoutSessionClient = stripeCheckoutSessionClient;
 			_frontendOptions = frontendOptions.Value;
-			_configuration = configuration;
+			_stripeOptions = stripeOptions.Value;
 			_logger = logger;
 
-			var secretKey = _configuration["Stripe:SecretKey"];
-			if (string.IsNullOrWhiteSpace(secretKey))
-			{
-				_logger.LogError("Stripe:SecretKey is missing from configuration");
-				throw new ValidationException("Stripe:SecretKey mangler.");
-			}
-
-			StripeConfiguration.ApiKey = secretKey;
+			StripeConfiguration.ApiKey = _stripeOptions.SecretKey;
 			_logger.LogInformation("StripeService initialized successfully");
 		}
 
@@ -180,7 +173,7 @@ namespace BusRejser.Services
 		{
 			_logger.LogInformation("Handling Stripe webhook");
 
-			var webhookSecret = _configuration["Stripe:WebhookSecret"];
+			var webhookSecret = _stripeOptions.WebhookSecret;
 
 			_logger.LogInformation(
 				"Stripe webhook received. SecretPresent {SecretPresent}, SignaturePresent {SignaturePresent}, BodyLength {BodyLength}",

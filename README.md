@@ -1,157 +1,153 @@
-# 🚌 BusPlanen Backend (API)
+# BusPlanen Backend (API)
 
-Backend API for BusPlanen – håndterer rejser, booking, brugere og Stripe betaling.
+Backend API for BusPlanen. Haandterer rejser, bookinger, brugere og Stripe-betaling.
 
----
+## Features
 
-## ✨ Features
-
-- REST API for:
-  - Rejser
-  - Booking
-  - Brugere
-  - Busser
-- JWT authentication (roller)
-- Stripe checkout + webhook integration
-- Seat reservation (ingen overselling)
+- REST API for rejser, bookinger, brugere og busser
+- JWT authentication med roller
+- Stripe checkout og webhook-integration
+- Seat reservation uden overselling
 - Global exception handling
-- Structured logging (Serilog)
-- Correlation ID pr request
-- Unit tests for BookingService
+- Structured logging med Serilog
+- Correlation ID per request
 
----
+## Arkitektur
 
-## 🧠 Arkitektur
-
-```
-
-Controller → Service → Repository → Database
-
+```text
+Controller -> Service -> Repository -> Database
 ```
 
 - Services indeholder business logic
-- Repositories håndterer database
+- Repositories haandterer databaseadgang
 - Controllers er tynde
 
----
+## Booking flow
 
-## 🔐 Auth
-
-JWT baseret auth med roller:
-
-- Admin
-- Medarbejder
-- Kunde
-
----
-
-## 💳 Booking flow
-
-```
-
-Frontend → Stripe Checkout → Webhook → BookingService → DB
-
+```text
+Frontend -> Stripe Checkout -> Webhook -> BookingService -> DB
 ```
 
 - Booking oprettes kun efter verificeret betaling
-- Webhook er idempotent (ingen dubletter)
-- Seats reserveres før booking
-- Rollback hvis noget fejler
+- Webhook-flowet er gjort idempotent
+- Checkout-status er read-only
 
----
+## Krav
 
-## 🧪 API endpoints (uddrag)
-
-```
-
-GET    /api/rejse
-GET    /api/rejse/{id}
-POST   /api/rejse        (Admin/Medarbejder)
-
-GET    /api/booking/mine
-GET    /api/booking/rejse/{id}
-PUT    /api/booking/{id}/cancel
-PUT    /api/booking/{id}/reactivate
-
-POST   /api/stripe/create-checkout-session
-POST   /api/stripe/webhook
-
-```
-
----
-
-## 🚀 Kør projektet lokalt
-
-### Requirements
-
-- .NET 8
-- MySQL
+- .NET 8 SDK
+- MySQL 8
 - Stripe test keys
 
----
+## Lokal setup uden committed secrets
 
-### Environment variables
+Projektet er sat op til at bruge denne model:
 
+1. `appsettings.json` til sikre defaults og struktur
+2. `appsettings.Development.json` som lokal, ignoreret dev-fil
+3. `dotnet user-secrets` eller environment variables til rigtige secrets
+4. `BusRejser/appsettings.Example.json` som delt reference for den fulde shape
+
+Det betyder i praksis:
+
+- repoet viser hvilke felter der findes
+- `appsettings.Development.json` maa gerne indeholde lokale dev-vaerdier, fordi den er ignoreret
+- production og CI maa ikke bygge paa lokale filer med secrets
+- user-secrets eller environment variables er stadig den foretrukne vej til rigtige hemmeligheder
+
+`BusRejser/appsettings.Example.json` kan kopieres som udgangspunkt, hvis du vil have en lokal dev-fil.
+
+```powershell
+Copy-Item .\BusRejser\appsettings.Example.json .\BusRejser\appsettings.Development.json
 ```
 
-ASPNETCORE_ENVIRONMENT=Development
+### Foretrukken model: Initialiser user-secrets
 
-DB_CONNECTION_STRING=your_connection_string
-JWT_SECRET=your_jwt_secret
+Koer fra repo-roden:
 
-STRIPE_SECRET_KEY=your_key
-STRIPE_WEBHOOK_SECRET=your_secret
-
-````
-
----
-
-### Run
-
-```bash
-dotnet run
-````
-
-Swagger:
-
+```powershell
+dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "ConnectionStrings:DefaultConnection" "server=localhost;port=3307;database=busplanen;user=bususer;password=replace-me;"
+dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Jwt:Secret" "replace-with-at-least-32-characters"
+dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Stripe:SecretKey" "replace-with-stripe-secret-key"
+dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Stripe:WebhookSecret" "replace-with-stripe-webhook-secret"
+dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Email:Host" "sandbox.smtp.mailtrap.io"
+dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Email:Port" "587"
+dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Email:Username" "replace-with-email-username"
+dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Email:Password" "replace-with-email-password"
+dotnet user-secrets --project .\BusRejser\BusRejser.csproj set "Email:From" "noreply@example.com"
 ```
+
+### Alternativt: environment variables
+
+ASP.NET Core mapper `__` til `:`.
+
+```powershell
+$env:ConnectionStrings__DefaultConnection="server=localhost;port=3307;database=busplanen;user=bususer;password=replace-me;"
+$env:Jwt__Secret="replace-with-at-least-32-characters"
+$env:Stripe__SecretKey="replace-with-stripe-secret-key"
+$env:Stripe__WebhookSecret="replace-with-stripe-webhook-secret"
+$env:Email__Host="sandbox.smtp.mailtrap.io"
+$env:Email__Port="587"
+$env:Email__Username="replace-with-email-username"
+$env:Email__Password="replace-with-email-password"
+$env:Email__From="noreply@example.com"
+```
+
+## CORS og frontend-config
+
+Foelgende felter kan saettes i din lokale, ignorerede `appsettings.Development.json`:
+
+- `Cors:AllowedOrigins`
+- `Frontend:BaseUrl`
+- `Frontend:PaymentSuccessPath`
+- `Frontend:PaymentCancelPath`
+
+Du kan ogsaa laegge lokale dev-secrets der, hvis du bevidst vaelger den model. Det vigtige er, at filen ikke trackes i git.
+
+Disse bruges til trusted frontend-origin og Stripe redirects.
+
+## Database med Docker Compose
+
+`docker-compose.yml` bruger nu environment variables i stedet for haardkodede passwords.
+
+1. Kopier `.env.example` til `.env`
+2. Saet dine egne vaerdier
+3. Start databasen:
+
+```powershell
+docker compose up -d
+```
+
+## Run
+
+```powershell
+dotnet run --project .\BusRejser\BusRejser.csproj
+```
+
+Swagger er tilgaengelig i development:
+
+```text
 /swagger
 ```
 
----
+## Startup validation
 
-## 🧪 Tests
+Applikationen failer nu ved startup hvis kritisk config mangler eller er ugyldig for:
 
-* Unit tests for BookingService
-* Dækker:
+- database connection string
+- JWT secret
+- Stripe secret og webhook secret
+- email host/credentials/from address
+- trusted CORS origins
+- trusted frontend base URL
 
-  * seat reservation
-  * rollback
-  * cancel/reactivate
-  * Stripe webhook cases
+## Tests
 
----
+Koer tests:
 
-## 📌 Status
-
-* Booking flow implementeret og testet
-* Stripe integration virker
-* Logging + middleware på plads
-* Exception handling centraliseret
-
----
-
-## 🧱 Næste skridt
-
-* Flere tests (Auth + Rejse)
-* Deployment setup
-* Production config (CORS + env)
-
----
-
-## ⚠️ Note
-
-Kører pt. i development.
-Production setup kommer senere.
-
+```powershell
+dotnet test .\BusPlanen.Tests\BusPlanen.Tests.csproj
 ```
+
+## Status
+
+Backenden er stadig under haardening frem mod deployment, men auth-, Stripe- og config-flow er blevet strammet op.
