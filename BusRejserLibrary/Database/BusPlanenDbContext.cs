@@ -82,11 +82,40 @@ namespace BusRejserLibrary.Database
 				.HasForeignKey(x => x.UserId)
 				.OnDelete(DeleteBehavior.Cascade);
 
-			modelBuilder.Entity<Booking>()
-				.HasOne<User>()
-				.WithMany()
-				.HasForeignKey(x => x.UserId)
-				.OnDelete(DeleteBehavior.SetNull);
+			modelBuilder.Entity<Booking>(entity =>
+			{
+				entity.Property(x => x.KundeNavn)
+					.IsRequired()
+					.HasMaxLength(200);
+
+				entity.Property(x => x.KundeEmail)
+					.IsRequired()
+					.HasMaxLength(255);
+
+				entity.Property(x => x.BookingReference)
+					.IsRequired()
+					.HasMaxLength(32);
+
+				entity.Property(x => x.StripeSessionId)
+					.HasMaxLength(255);
+
+				entity.Property(x => x.StripePaymentIntentId)
+					.HasMaxLength(255);
+
+				entity.Property(x => x.TotalPrice)
+					.HasPrecision(18, 2);
+
+				entity.HasIndex(x => x.BookingReference)
+					.IsUnique();
+
+				entity.HasIndex(x => x.StripeSessionId)
+					.IsUnique();
+
+				entity.HasOne<User>()
+					.WithMany()
+					.HasForeignKey(x => x.UserId)
+					.OnDelete(DeleteBehavior.SetNull);
+			});
 
 			modelBuilder.Entity<Rejse>()
 				.Property(x => x.Version)

@@ -116,6 +116,7 @@ builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped(_ => new JwtService(jwtSecret));
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<BookingService>();
+builder.Services.AddScoped<IStripeCheckoutSessionClient, StripeCheckoutSessionClient>();
 builder.Services.AddScoped<StripeService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<UserService>();

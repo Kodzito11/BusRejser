@@ -4,6 +4,7 @@ using BusRejser.Mappers;
 using BusRejserLibrary.Enums;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace BusRejserLibrary.Services
 {
@@ -257,6 +258,12 @@ namespace BusRejserLibrary.Services
 				throw new ValidationException("Stripe request må ikke være null.");
 			}
 
+			if (string.IsNullOrWhiteSpace(request.StripeSessionId))
+			{
+				_logger.LogWarning("CreateFromStripe called with missing Stripe session id");
+				throw new ValidationException("Stripe session id mangler.");
+			}
+
 			_logger.LogInformation(
 				"CreateFromStripe started for SessionId {SessionId}, RejseId {RejseId}, Seats {Seats}",
 				request.StripeSessionId,
@@ -292,7 +299,27 @@ namespace BusRejserLibrary.Services
 				request.StripeSessionId
 			);
 
-			Create(booking);
+			try
+			{
+				Create(booking);
+			}
+			catch (Exception ex) when (ex is DbUpdateException || ex is InvalidOperationException || ex is ConflictException)
+			{
+				var duplicate = _bookingRepository.GetByStripeSessionId(request.StripeSessionId);
+				if (duplicate == null)
+				{
+					throw;
+				}
+
+				_logger.LogWarning(
+					ex,
+					"Duplicate or concurrent Stripe booking detected for SessionId {SessionId}. Existing BookingId {BookingId} will be kept.",
+					request.StripeSessionId,
+					duplicate.BookingId
+				);
+
+				return;
+			}
 
 			_logger.LogInformation(
 				"CreateFromStripe completed successfully for SessionId {SessionId}",

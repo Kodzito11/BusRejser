@@ -11,17 +11,20 @@ namespace BusRejser.Services
 	{
 		private readonly RejseRepository _rejseRepository;
 		private readonly BookingService _bookingService;
+		private readonly IStripeCheckoutSessionClient _stripeCheckoutSessionClient;
 		private readonly IConfiguration _configuration;
 		private readonly ILogger<StripeService> _logger;
 
 		public StripeService(
 			RejseRepository rejseRepository,
 			BookingService bookingService,
+			IStripeCheckoutSessionClient stripeCheckoutSessionClient,
 			IConfiguration configuration,
 			ILogger<StripeService> logger)
 		{
 			_rejseRepository = rejseRepository;
 			_bookingService = bookingService;
+			_stripeCheckoutSessionClient = stripeCheckoutSessionClient;
 			_configuration = configuration;
 			_logger = logger;
 
@@ -132,8 +135,7 @@ namespace BusRejser.Services
 				}
 			};
 
-			var sessionService = new SessionService();
-			var session = sessionService.Create(options);
+			var session = _stripeCheckoutSessionClient.Create(options);
 
 			if (string.IsNullOrWhiteSpace(session.Url))
 			{
@@ -244,8 +246,7 @@ namespace BusRejser.Services
 				sessionId
 			);
 
-			var sessionService = new SessionService();
-			var session = sessionService.Get(sessionId);
+			var session = _stripeCheckoutSessionClient.Get(sessionId);
 
 			if (session == null)
 			{
@@ -262,40 +263,9 @@ namespace BusRejser.Services
 			if (isPaid && booking == null)
 			{
 				_logger.LogInformation(
-					"Paid Stripe session {SessionId} has no booking yet. Attempting fallback booking creation.",
+					"Paid Stripe session {SessionId} has no booking yet. Awaiting webhook processing.",
 					sessionId
 				);
-
-				try
-				{
-					var request = BuildWebhookBookingRequest(session);
-
-					_logger.LogInformation(
-						"Fallback request built: RejseId {RejseId}, Seats {Seats}, Email {Email}",
-						request.RejseId,
-						request.AntalPladser,
-						request.KundeEmail
-					);
-
-					_bookingService.CreateFromStripe(request);
-
-					booking = _bookingService.GetByStripeSessionId(sessionId);
-
-					_logger.LogInformation(
-						"Fallback booking creation finished. BookingExists {Exists}",
-						booking != null
-					);
-				}
-				catch (Exception ex)
-				{
-					_logger.LogError(
-						ex,
-						"Fallback booking creation FAILED for session {SessionId}",
-						sessionId
-					);
-
-					throw;
-				}
 			}
 
 			var result = new CheckoutStatusResponse
