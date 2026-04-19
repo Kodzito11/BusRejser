@@ -60,7 +60,8 @@ namespace BusRejser.Services
 
 			var user = new User
 			{	
-
+				FirstName = FirstName.Trim(),
+				LastName = LastName.Trim(),
 				Email = email,
 				PasswordHash = passwordHash,
 				Role = BusRejserLibrary.Enums.UserRole.Kunde,
