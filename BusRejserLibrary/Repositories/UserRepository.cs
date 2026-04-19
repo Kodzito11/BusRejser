@@ -38,13 +38,6 @@ namespace BusRejserLibrary.Repositories
 				.FirstOrDefault(x => x.Email == email);
 		}
 
-		public User? GetByUsername(string username)
-		{
-			return _context.Users
-				.AsNoTracking()
-				.FirstOrDefault(x => x.Username == username);
-		}
-
 		public List<User> GetAll()
 		{
 			return _context.Users
@@ -62,8 +55,6 @@ namespace BusRejserLibrary.Repositories
 			if (existing == null)
 				return false;
 
-			existing.Username = user.Username;
-			existing.FullName = user.FullName;
 			existing.FirstName = user.FirstName;
 			existing.LastName = user.LastName;
 			existing.Email = user.Email;

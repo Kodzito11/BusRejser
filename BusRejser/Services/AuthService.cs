@@ -38,33 +38,29 @@ namespace BusRejser.Services
 			_authOptions = authOptions.Value;
 		}
 
-		public int Register(string username, string email, string password)
+		public int Register(string FirstName, string LastName, string email, string password)
 		{
-			if (string.IsNullOrWhiteSpace(username))
-				throw new ValidationException("Brugernavn kræves.");
-
+			if (string.IsNullOrWhiteSpace(FirstName))
+				throw new ValidationException("Fornavn kræves");
+			if (string.IsNullOrWhiteSpace(LastName))
+				throw new ValidationException("Efternavn kræves");
 			if (string.IsNullOrWhiteSpace(email))
 				throw new ValidationException("Email kræves.");
 
 			if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
 				throw new ValidationException("Password skal være mindst 8 tegn.");
 
-			username = username.Trim();
 			email = email.Trim().ToLowerInvariant();
 
 			var existingEmail = _userRepository.GetByEmail(email);
 			if (existingEmail != null)
 				throw new ConflictException("Email findes allerede.");
 
-			var existingUsername = _userRepository.GetByUsername(username);
-			if (existingUsername != null)
-				throw new ConflictException("Brugernavn findes allerede.");
-
 			var passwordHash = _passwordService.HashPassword(password);
 
 			var user = new User
-			{
-				Username = username,
+			{	
+
 				Email = email,
 				PasswordHash = passwordHash,
 				Role = BusRejserLibrary.Enums.UserRole.Kunde,
@@ -242,7 +238,6 @@ namespace BusRejser.Services
 				User = new AuthenticatedUserResponse
 				{
 					UserId = user.UserId,
-					Username = user.Username,
 					Email = user.Email,
 					Role = user.Role.ToString()
 				}

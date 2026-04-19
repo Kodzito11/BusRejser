@@ -29,11 +29,11 @@ namespace BusRejser.Services
 			return new UserProfileResponse
 			{
 				UserId = user.UserId,
-				Username = user.Username,
+				FirstName = user.FirstName,
+				LastName = user.LastName,
 				Email = user.Email,
 				Role = user.Role.ToString(),
 				CreatedAt = user.CreatedAt,
-				FullName = user.FullName,
 				Phone = user.PhoneNumber
 			};
 		}
@@ -44,26 +44,18 @@ namespace BusRejser.Services
 			if (user == null)
 				throw new NotFoundException("Bruger ikke fundet.");
 
-			if (string.IsNullOrWhiteSpace(request.Username))
-				throw new ValidationException("Brugernavn kræves.");
-
 			if (string.IsNullOrWhiteSpace(request.Email))
 				throw new ValidationException("Email kræves.");
 
-			var normalizedUsername = request.Username.Trim();
 			var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 
 			var existingEmail = _userRepository.GetByEmail(normalizedEmail);
 			if (existingEmail != null && existingEmail.UserId != userId)
 				throw new ConflictException("Email findes allerede.");
 
-			var existingUsername = _userRepository.GetByUsername(normalizedUsername);
-			if (existingUsername != null && existingUsername.UserId != userId)
-				throw new ConflictException("Brugernavn findes allerede.");
-
-			user.Username = normalizedUsername;
 			user.Email = normalizedEmail;
-			user.FullName = string.IsNullOrWhiteSpace(request.FullName) ? null : request.FullName.Trim();
+			user.FirstName = string.IsNullOrWhiteSpace(request.FirstName) ? null : request.FirstName.Trim();
+			user.LastName = string.IsNullOrWhiteSpace(request.LastName) ? null : request.LastName.Trim();
 			user.PhoneNumber = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim();
 
 			var updated = _userRepository.Update(user);
@@ -73,11 +65,11 @@ namespace BusRejser.Services
 			return new UserProfileResponse
 			{
 				UserId = user.UserId,
-				Username = user.Username,
+				FirstName = user.FirstName,
+				LastName = user.LastName,
 				Email = user.Email,
 				Role = user.Role.ToString(),
 				CreatedAt = user.CreatedAt,
-				FullName = user.FullName,
 				Phone = user.PhoneNumber
 			};
 		}

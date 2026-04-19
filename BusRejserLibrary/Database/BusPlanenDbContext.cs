@@ -42,13 +42,6 @@ namespace BusRejserLibrary.Database
 				entity.Property(x => x.UserId)
 					.ValueGeneratedOnAdd();
 
-				entity.Property(x => x.Username)
-					.IsRequired()
-					.HasMaxLength(100);
-
-				entity.Property(x => x.FullName)
-					.HasMaxLength(200);
-
 				entity.Property(x => x.FirstName)
 					.HasMaxLength(100);
 
@@ -71,9 +64,6 @@ namespace BusRejserLibrary.Database
 
 				entity.Property(x => x.UpdatedAt)
 					.IsRequired();
-
-				entity.HasIndex(x => x.Username)
-					.IsUnique();
 
 				entity.HasIndex(x => x.Email)
 					.IsUnique();

@@ -20,7 +20,7 @@ namespace BusRejser.Controllers
 		[EnableRateLimiting("auth-register")]
 		public ActionResult<RegisterResponse> Register([FromBody] RegisterRequest request)
 		{
-			var userId = _authService.Register(request.Username, request.Email, request.Password);
+			var userId = _authService.Register(request.FirstName, request.LastName, request.Email, request.Password);
 
 			return Ok(new RegisterResponse
 			{

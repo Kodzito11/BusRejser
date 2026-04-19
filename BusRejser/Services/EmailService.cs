@@ -1,8 +1,9 @@
 using BusRejser.Options;
-using MailKit.Net.Smtp;
-using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+
 
 public class EmailService
 {

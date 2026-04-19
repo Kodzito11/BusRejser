@@ -7,7 +7,6 @@ namespace BusRejserLibrary.Repositories
 		int Create(User user);
 		User? GetById(int id);
 		User? GetByEmail(string email);
-		User? GetByUsername(string username);
 		List<User> GetAll();
 		bool Update(User user);
 		bool Delete(int id);
