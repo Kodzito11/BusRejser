@@ -27,6 +27,8 @@ namespace BusRejserLibrary.Models
 		public bool IsActive { get; set; } = true;
 		public bool EmailConfirmed { get; set; } = false;
 
+		public List<UserBadge> UserBadges { get; set; } = new();
+
 		public UserRole Role { get; set; } = Enums.UserRole.Kunde;
 
 		public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

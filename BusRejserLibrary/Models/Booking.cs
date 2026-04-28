@@ -12,13 +12,13 @@ namespace BusRejserLibrary.Models
 		public string KundeNavn { get; private set; }
 		public string KundeEmail { get; private set; }
 		public int AntalPladser { get; private set; }
-		public DateTime CreatedAt { get; private set; }
-		public DateTime? PaidAt { get; private set; }
-		public BookingStatus Status { get; private set; }
 		public string BookingReference { get; private set; } = "";
 		public string? StripeSessionId { get; private set; }
 		public string? StripePaymentIntentId { get; private set; }
 		public decimal TotalPrice { get; private set; }
+		public DateTime CreatedAt { get; private set; }
+		public DateTime? PaidAt { get; private set; }
+		public BookingStatus Status { get; private set; }
 
 		private Booking(
 			int rejseId,

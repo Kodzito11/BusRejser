@@ -17,6 +17,10 @@ namespace BusRejserLibrary.Database
 		public DbSet<Facilitet> Faciliteter => Set<Facilitet>();
 		public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 		public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+		public DbSet<TravelHistory> TravelHistories => Set<TravelHistory>();
+		public DbSet<VisitedLocation> VisitedLocations => Set<VisitedLocation>();
+		public DbSet<Badge> Badges => Set<Badge>();
+		public DbSet<UserBadge> UserBadges => Set<UserBadge>();
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -36,6 +40,10 @@ namespace BusRejserLibrary.Database
 			modelBuilder.Entity<Facilitet>().HasKey(x => x.Id);
 			modelBuilder.Entity<PasswordResetToken>().HasKey(x => x.Id);
 			modelBuilder.Entity<RefreshToken>().HasKey(x => x.Id);
+			modelBuilder.Entity<TravelHistory>().HasKey(x => x.TravelHistoryId);
+			modelBuilder.Entity<VisitedLocation>().HasKey(x => x.VisitedLocationId);
+			modelBuilder.Entity<Badge>().HasKey(x => x.BadgeId);
+			modelBuilder.Entity<UserBadge>().HasKey(x => x.UserBadgeId);
 
 			modelBuilder.Entity<User>(entity =>
 			{
@@ -160,6 +168,95 @@ namespace BusRejserLibrary.Database
 						j.HasKey("BusId", "FacilitetId");
 						j.ToTable("bus_facilitet");
 					});
+
+			modelBuilder.Entity<Badge>(entity =>
+			{
+				entity.Property(x => x.BadgeId)
+					.IsRequired()
+					.HasMaxLength(100);
+				entity.Property(x => x.BadgeName)
+					.IsRequired()
+					.HasMaxLength(100);
+				entity.Property(x => x.Description)
+					.HasMaxLength(500);
+				entity.Property(x => x.Country)
+					.HasMaxLength(100);
+				entity.Property(x => x.Region)
+					.IsRequired()
+					.HasMaxLength(100);
+				entity.Property(x => x.Municipality)
+					.IsRequired()
+					.HasMaxLength(100);
+			});
+
+			modelBuilder.Entity<UserBadge>(entity =>
+			{
+				entity.HasKey(x => x.UserBadgeId);
+
+				entity.HasOne(x => x.User)
+					.WithMany(x => x.UserBadges)
+					.HasForeignKey(x => x.UserId)
+					.OnDelete(DeleteBehavior.Cascade);
+
+				entity.HasOne(x => x.Badge)
+					.WithMany(x => x.UserBadges)
+					.HasForeignKey(x => x.BadgeId)
+					.OnDelete(DeleteBehavior.Cascade);
+
+				entity.HasIndex(x => new { x.UserId, x.BadgeId })
+					.IsUnique();
+			});
+
+			modelBuilder.Entity<TravelHistory>(entity =>
+			{
+				entity.HasKey(x => x.TravelHistoryId);
+
+				entity.HasOne(x => x.User)
+					.WithMany()
+					.HasForeignKey(x => x.UserId)
+					.OnDelete(DeleteBehavior.Cascade);
+
+				entity.HasOne(x => x.Rejse)
+					.WithMany()
+					.HasForeignKey(x => x.RejseId)
+					.OnDelete(DeleteBehavior.Cascade);
+
+				entity.HasOne(x => x.Booking)
+					.WithMany()
+					.HasForeignKey(x => x.BookingId)
+					.OnDelete(DeleteBehavior.Cascade);
+
+				entity.HasIndex(x => new { x.UserId, x.RejseId })
+					.IsUnique();
+			});
+			modelBuilder.Entity<VisitedLocation>(entity =>
+			{
+				entity.HasKey(x => x.VisitedLocationId);
+
+				entity.HasOne(x => x.User)
+					.WithMany()
+					.HasForeignKey(x => x.UserId)
+					.OnDelete(DeleteBehavior.Cascade);
+
+				entity.Property(x => x.Name)
+					.IsRequired()
+					.HasMaxLength(150);
+
+				entity.Property(x => x.Country)
+					.IsRequired()
+					.HasMaxLength(100);
+
+				entity.Property(x => x.Region)
+					.IsRequired()
+					.HasMaxLength(100);
+
+				entity.Property(x => x.Municipality)
+					.HasMaxLength(100);
+
+				entity.HasIndex(x => new { x.UserId, x.Name, x.Country, x.Region })
+					.IsUnique();
+			});
+
 		}
 	}
 }

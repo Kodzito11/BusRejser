@@ -11,10 +11,14 @@ namespace BusRejserLibrary.Models
 		public int TravelHistoryId { get; set; }
 
 		public int UserId { get; set; }
-		public int RejseId { get; set; }
-		public int BookingId { get; set; }
+		public User? User { get; set; }
 
-		public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
+		public int RejseId { get; set; }
+		public Rejse? Rejse { get; set; }
+
+		public int BookingId { get; set; }
+		public Booking? Booking { get; set; }
+
 
 		public string Destination { get; set; } = string.Empty;
 		public string? Country { get; set; }
@@ -22,5 +26,6 @@ namespace BusRejserLibrary.Models
 		public string? Region { get; set; }
 		public string? Municipality { get; set; }
 
+		public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
 	}
 }
