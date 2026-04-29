@@ -244,22 +244,26 @@ builder.Services.AddDbContext<BusPlanenDbContext>(options =>
 		ServerVersion.AutoDetect(connectionStringOptions.DefaultConnection))
 );
 
-builder.Services.AddScoped<BusRepository>();
 
 builder.Services.AddScoped<UserRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-
+builder.Services.AddScoped<BusRepository>();
 builder.Services.AddScoped<FacilitetRepository>();
 builder.Services.AddScoped<BusFacilitetRepository>();
-
 builder.Services.AddScoped<RejseRepository>();
-builder.Services.AddScoped<IRejseRepository, RejseRepository>();
-
 builder.Services.AddScoped<BookingRepository>();
-builder.Services.AddScoped<IBookingRepository, BookingRepository>();
-
 builder.Services.AddScoped<PasswordResetTokenRepository>();
 builder.Services.AddScoped<RefreshTokenRepository>();
+builder.Services.AddScoped<TravelHistoryRepository>();
+builder.Services.AddScoped<UserBadgeRepository>();
+builder.Services.AddScoped<BadgeRepository>();
+
+
+
+builder.Services.AddScoped<IRejseRepository, RejseRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IStripeCheckoutSessionClient, StripeCheckoutSessionClient>();
+
 
 builder.Services.AddScoped<BusService>();
 builder.Services.AddScoped<FacilitetService>();
@@ -268,10 +272,12 @@ builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<BookingService>();
-builder.Services.AddScoped<IStripeCheckoutSessionClient, StripeCheckoutSessionClient>();
 builder.Services.AddScoped<StripeService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<BadgeService>();
+builder.Services.AddScoped<TravelHistoryService>();
+builder.Services.AddScoped<BadgeEngine>();
 
 var app = builder.Build();
 

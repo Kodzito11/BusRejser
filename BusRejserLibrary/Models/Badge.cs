@@ -22,11 +22,11 @@ namespace BusRejserLibrary.Models
 		public string? RuleValue { get; set; }
 		public int RequiredValue { get; set; }
 		public int? RuleWindowValue { get; set; }
+		public bool IsActive { get; set; } = false;
 
 		public List<UserBadge> UserBadges { get; set; } = new();
 
 		public BadgeTier Tier { get; set; }
-		public IsBadgeActive IsActive { get; set; }
 
 	}
 }

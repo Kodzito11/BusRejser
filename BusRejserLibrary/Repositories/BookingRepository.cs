@@ -155,5 +155,15 @@ namespace BusRejserLibrary.Repositories
 				throw;
 			}
 		}
+
+		public List<Booking> GetCompletedPaidByUserId(int userId)
+		{
+			return _context.Bookings
+				.AsNoTracking()
+				.Where(x =>
+					x.UserId == userId &&
+					x.Status == BookingStatus.Paid)
+				.ToList();
+		}
 	}
 }
