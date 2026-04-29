@@ -33,6 +33,10 @@ namespace BusRejserLibrary.Database
 			modelBuilder.Entity<Facilitet>().ToTable("facilitet");
 			modelBuilder.Entity<PasswordResetToken>().ToTable("password_reset_tokens");
 			modelBuilder.Entity<RefreshToken>().ToTable("refresh_tokens");
+			modelBuilder.Entity<TravelHistory>().ToTable("travel_history");
+			modelBuilder.Entity<VisitedLocation>().ToTable("visited_locations");
+			modelBuilder.Entity<Badge>().ToTable("badges");
+			modelBuilder.Entity<UserBadge>().ToTable("user_badges");
 
 			modelBuilder.Entity<User>().HasKey(x => x.UserId);
 			modelBuilder.Entity<Rejse>().HasKey(x => x.RejseId);
@@ -70,8 +74,7 @@ namespace BusRejserLibrary.Database
 				entity.Property(x => x.CreatedAt)
 					.IsRequired();
 
-				entity.Property(x => x.UpdatedAt)
-					.IsRequired();
+				entity.Property(x => x.UpdatedAt);
 
 				entity.HasIndex(x => x.Email)
 					.IsUnique();
@@ -171,21 +174,31 @@ namespace BusRejserLibrary.Database
 
 			modelBuilder.Entity<Badge>(entity =>
 			{
-				entity.Property(x => x.BadgeId)
-					.IsRequired()
-					.HasMaxLength(100);
 				entity.Property(x => x.BadgeName)
 					.IsRequired()
 					.HasMaxLength(100);
+
 				entity.Property(x => x.Description)
 					.HasMaxLength(500);
+
 				entity.Property(x => x.Country)
 					.HasMaxLength(100);
+
 				entity.Property(x => x.Region)
 					.IsRequired()
 					.HasMaxLength(100);
+
 				entity.Property(x => x.Municipality)
+					.HasMaxLength(100);
+
+				entity.Property(x => x.IconUrl)
+					.HasMaxLength(500);
+
+				entity.Property(x => x.RuleType)
 					.IsRequired()
+					.HasMaxLength(100);
+
+				entity.Property(x => x.RuleValue)
 					.HasMaxLength(100);
 			});
 

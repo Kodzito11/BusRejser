@@ -22,6 +22,68 @@ namespace BusRejserLibrary.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("BusRejserLibrary.Models.Badge", b =>
+                {
+                    b.Property<int>("BadgeId")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("BadgeId"));
+
+                    b.Property<string>("BadgeName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("IconUrl")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Municipality")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<int>("RequiredValue")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RuleType")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("RuleValue")
+                        .HasColumnType("longtext");
+
+                    b.Property<int?>("RuleWindowValue")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("int");
+
+                    b.HasKey("BadgeId");
+
+                    b.ToTable("Badges");
+                });
+
             modelBuilder.Entity("BusRejserLibrary.Models.Booking", b =>
                 {
                     b.Property<int>("BookingId")
@@ -79,6 +141,8 @@ namespace BusRejserLibrary.Migrations
 
                     b.HasIndex("BookingReference")
                         .IsUnique();
+
+                    b.HasIndex("RejseId");
 
                     b.HasIndex("StripeSessionId")
                         .IsUnique();
@@ -272,8 +336,14 @@ namespace BusRejserLibrary.Migrations
                     b.Property<int>("MaxSeats")
                         .HasColumnType("int");
 
+                    b.Property<string>("Municipality")
+                        .HasColumnType("longtext");
+
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(65,30)");
+
+                    b.Property<string>("Region")
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ShortDescription")
                         .HasColumnType("longtext");
@@ -292,6 +362,54 @@ namespace BusRejserLibrary.Migrations
                     b.HasKey("RejseId");
 
                     b.ToTable("rejse", (string)null);
+                });
+
+            modelBuilder.Entity("BusRejserLibrary.Models.TravelHistory", b =>
+                {
+                    b.Property<int>("TravelHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("TravelHistoryId"));
+
+                    b.Property<int>("BookingId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("City")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Country")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Municipality")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Region")
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("RejseId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("TravelHistoryId");
+
+                    b.HasIndex("BookingId");
+
+                    b.HasIndex("RejseId");
+
+                    b.HasIndex("UserId", "RejseId")
+                        .IsUnique();
+
+                    b.ToTable("TravelHistories");
                 });
 
             modelBuilder.Entity("BusRejserLibrary.Models.User", b =>
@@ -314,12 +432,9 @@ namespace BusRejserLibrary.Migrations
                         .HasColumnType("tinyint(1)");
 
                     b.Property<string>("FirstName")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
-
-                    b.Property<string>("FullName")
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
@@ -328,6 +443,7 @@ namespace BusRejserLibrary.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("LastName")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
@@ -343,23 +459,96 @@ namespace BusRejserLibrary.Migrations
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("Username")
+                    b.Property<DateTime?>("UpdatedAt")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("UserId");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.HasIndex("Username")
+                    b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("BusRejserLibrary.Models.UserBadge", b =>
+                {
+                    b.Property<int>("UserBadgeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UserBadgeId"));
+
+                    b.Property<int>("BadgeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EarnedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserBadgeId");
+
+                    b.HasIndex("BadgeId");
+
+                    b.HasIndex("UserId", "BadgeId")
                         .IsUnique();
 
-                    b.ToTable("users", (string)null);
+                    b.ToTable("UserBadges");
+                });
+
+            modelBuilder.Entity("BusRejserLibrary.Models.VisitedLocation", b =>
+                {
+                    b.Property<int>("VisitedLocationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("VisitedLocationId"));
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("FirstVisitedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("LastVisitedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double");
+
+                    b.Property<string>("Municipality")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VisitCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("VisitedLocationId");
+
+                    b.HasIndex("UserId", "Name", "Country", "Region")
+                        .IsUnique();
+
+                    b.ToTable("VisitedLocations");
                 });
 
             modelBuilder.Entity("bus_facilitet", b =>
@@ -379,10 +568,18 @@ namespace BusRejserLibrary.Migrations
 
             modelBuilder.Entity("BusRejserLibrary.Models.Booking", b =>
                 {
+                    b.HasOne("BusRejserLibrary.Models.Rejse", "Rejse")
+                        .WithMany()
+                        .HasForeignKey("RejseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("BusRejserLibrary.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Rejse");
                 });
 
             modelBuilder.Entity("BusRejserLibrary.Models.PasswordResetToken", b =>
@@ -403,6 +600,63 @@ namespace BusRejserLibrary.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("BusRejserLibrary.Models.TravelHistory", b =>
+                {
+                    b.HasOne("BusRejserLibrary.Models.Booking", "Booking")
+                        .WithMany()
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BusRejserLibrary.Models.Rejse", "Rejse")
+                        .WithMany()
+                        .HasForeignKey("RejseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BusRejserLibrary.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
+
+                    b.Navigation("Rejse");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BusRejserLibrary.Models.UserBadge", b =>
+                {
+                    b.HasOne("BusRejserLibrary.Models.Badge", "Badge")
+                        .WithMany("UserBadges")
+                        .HasForeignKey("BadgeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BusRejserLibrary.Models.User", "User")
+                        .WithMany("UserBadges")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Badge");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BusRejserLibrary.Models.VisitedLocation", b =>
+                {
+                    b.HasOne("BusRejserLibrary.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("bus_facilitet", b =>
                 {
                     b.HasOne("BusRejserLibrary.Models.Bus", null)
@@ -416,6 +670,16 @@ namespace BusRejserLibrary.Migrations
                         .HasForeignKey("FacilitetId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("BusRejserLibrary.Models.Badge", b =>
+                {
+                    b.Navigation("UserBadges");
+                });
+
+            modelBuilder.Entity("BusRejserLibrary.Models.User", b =>
+                {
+                    b.Navigation("UserBadges");
                 });
 #pragma warning restore 612, 618
         }
