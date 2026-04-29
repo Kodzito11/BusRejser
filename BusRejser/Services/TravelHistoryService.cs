@@ -8,18 +8,15 @@ namespace BusRejser.Services
 	public class TravelHistoryService
 	{
 		private readonly IBookingRepository _bookingRepository;
-		private readonly IRejseRepository _rejseRepository;
 		private readonly TravelHistoryRepository _travelHistoryRepository;
 		private readonly BadgeEngine _badgeEngine;
 
 		public TravelHistoryService(
 			IBookingRepository bookingRepository,
-			IRejseRepository rejseRepository,
 			TravelHistoryRepository travelHistoryRepository,
 			BadgeEngine badgeEngine)
 		{
 			_bookingRepository = bookingRepository;
-			_rejseRepository = rejseRepository;
 			_travelHistoryRepository = travelHistoryRepository;
 			_badgeEngine = badgeEngine;
 		}

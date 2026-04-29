@@ -32,6 +32,8 @@ namespace BusRejserLibrary.Models
 			string destination,
 			string country,
 			string city,
+			string? region,
+			string? municipality,
 			DateTime startAt,
 			DateTime endAt,
 			decimal price,
@@ -47,6 +49,8 @@ namespace BusRejserLibrary.Models
 			Destination = destination;
 			Country = country;
 			City = city;
+			Region = string.IsNullOrWhiteSpace(region) ? null : region.Trim();
+			Municipality = string.IsNullOrWhiteSpace(municipality) ? null : municipality.Trim();
 			StartAt = startAt;
 			EndAt = endAt;
 			Price = price;
@@ -66,6 +70,8 @@ namespace BusRejserLibrary.Models
 			string destination,
 			string country,
 			string city,
+			string? region,
+			string? municipality,
 			DateTime startAt,
 			DateTime endAt,
 			decimal price,
@@ -100,6 +106,8 @@ namespace BusRejserLibrary.Models
 				destination.Trim(),
 				country.Trim(),
 				city.Trim(),
+				region?.Trim(),
+				municipality?.Trim(),
 				startAt,
 				endAt,
 				price,
