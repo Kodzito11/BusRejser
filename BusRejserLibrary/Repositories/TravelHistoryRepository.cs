@@ -1,5 +1,6 @@
 ﻿using BusRejserLibrary.Database;
 using BusRejserLibrary.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,6 +28,9 @@ namespace BusRejserLibrary.Repositories
 		public List<TravelHistory> GetByUserId(int userId)
 		{
 			return _context.TravelHistories
+				.AsNoTracking()
+				.Include(x => x.Rejse)
+				.Include(x => x.Booking)
 				.Where(x => x.UserId == userId)
 				.OrderByDescending(x => x.CompletedAt)
 				.ToList();

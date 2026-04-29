@@ -8,6 +8,8 @@ namespace BusRejserLibrary.Models
 	{
 		public int BookingId { get; set; }
 		public int RejseId { get; private set; }
+		public Rejse? Rejse { get; set; }
+
 		public int? UserId { get; private set; }
 		public string KundeNavn { get; private set; }
 		public string KundeEmail { get; private set; }

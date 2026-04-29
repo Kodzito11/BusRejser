@@ -41,7 +41,7 @@ namespace BusRejser.Services
 			return userBadges.Select(ub => new UserBadgeResponse
 			{
 				BadgeId = ub.BadgeId,
-				Name = ub.Badge?.Name ?? "",
+				Name = ub.Badge?.BadgeName ?? "",
 				Description = ub.Badge?.Description ?? "",
 				IconUrl = ub.Badge?.IconUrl ?? "",
 				EarnedAt = ub.EarnedAt

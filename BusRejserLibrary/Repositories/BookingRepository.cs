@@ -165,5 +165,20 @@ namespace BusRejserLibrary.Repositories
 					x.Status == BookingStatus.Paid)
 				.ToList();
 		}
+
+		public List<Booking> GetCompletedPaidWithRejseByUserId(int userId)
+		{
+			var now = DateTime.UtcNow;
+
+			return _context.Bookings
+				.AsNoTracking()
+				.Include(x => x.Rejse)
+				.Where(x =>
+					x.UserId == userId &&
+					x.Status == BookingStatus.Paid &&
+					x.Rejse != null &&
+					x.Rejse.EndAt < now)
+				.ToList();
+		}
 	}
 }

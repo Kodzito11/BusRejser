@@ -46,20 +46,15 @@ namespace BusRejser.Services
 
 		public void SyncCompletedTripsForUser(int userId)
 		{
-			var bookings = _bookingRepository.GetByUserId(userId)
-				.Where(x => x.Status == BookingStatus.Paid)
-				.ToList();
+			var bookings = _bookingRepository.GetCompletedPaidWithRejseByUserId(userId);
 
 			foreach (var booking in bookings)
 			{
 				if (_travelHistoryRepository.Exists(userId, booking.RejseId))
 					continue;
 
-				var rejse = _rejseRepository.GetById(booking.RejseId);
+				var rejse = booking.Rejse;
 				if (rejse == null)
-					continue;
-
-				if (rejse.EndAt > DateTime.UtcNow)
 					continue;
 
 				_travelHistoryRepository.Create(new TravelHistory
@@ -71,7 +66,9 @@ namespace BusRejser.Services
 
 					Destination = rejse.Destination,
 					Country = rejse.Country,
-					City = rejse.City
+					City = rejse.City,
+					Region = rejse.Region,
+					Municipality = rejse.Municipality
 				});
 			}
 

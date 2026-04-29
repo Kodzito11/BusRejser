@@ -7,6 +7,7 @@ namespace BusRejserLibrary.Repositories
 		int Create(Booking booking);
 		List<Booking> GetAll();
 		List<Booking> GetCompletedPaidByUserId(int userId);
+		List<Booking> GetCompletedPaidWithRejseByUserId(int userId);
 		Booking? GetById(int id);
 		Booking? GetByStripeSessionId(string stripeSessionId);
 		List<Booking> GetByRejseId(int rejseId);

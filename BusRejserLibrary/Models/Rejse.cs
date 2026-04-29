@@ -9,6 +9,8 @@ namespace BusRejserLibrary.Models
 		public string Destination { get; set; }
 		public string Country { get; set; }
 		public string City { get; set; }
+		public string? Region { get; set; }
+		public string? Municipality { get; set; }
 		public DateTime StartAt { get; set; }
 		public DateTime EndAt { get; set; }
 		public decimal Price { get; set; }
