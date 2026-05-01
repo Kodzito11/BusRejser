@@ -44,7 +44,7 @@ namespace BusRejser.Services
 
 		private bool IsBadgeUnlocked(Badge badge, List<TravelHistory> history)
 		{
-			return badge.RuleType switch
+			return badge.RuleType.Trim() switch
 			{
 				"CompletedTrips" => HasCompletedTrips(badge, history),
 				"EarlyBooking" => HasEarlyBooking(badge, history),

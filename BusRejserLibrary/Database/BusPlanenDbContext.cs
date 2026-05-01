@@ -247,7 +247,7 @@ namespace BusRejserLibrary.Database
 					.HasForeignKey(x => x.BookingId)
 					.OnDelete(DeleteBehavior.Cascade);
 
-				entity.HasIndex(x => new { x.UserId, x.RejseId })
+				entity.HasIndex(x => new { x.UserId, x.BookingId })
 					.IsUnique();
 			});
 

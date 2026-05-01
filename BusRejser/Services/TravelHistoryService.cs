@@ -47,7 +47,7 @@ namespace BusRejser.Services
 
 			foreach (var booking in bookings)
 			{
-				if (_travelHistoryRepository.Exists(userId, booking.RejseId))
+				if (_travelHistoryRepository.ExistsByBookingId(userId, booking.BookingId))
 					continue;
 
 				var rejse = booking.Rejse;

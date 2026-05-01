@@ -36,10 +36,10 @@ namespace BusRejserLibrary.Repositories
 				.ToList();
 		}
 
-		public bool Exists(int userId, int rejseId)
+		public bool ExistsByBookingId(int userId, int bookingId)
 		{
 			return _context.TravelHistories
-				.Any(x => x.UserId == userId && x.RejseId == rejseId);
+				.Any(x => x.UserId == userId && x.BookingId == bookingId);
 		}
 
 		public List<TravelHistory> GetAll()

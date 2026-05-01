@@ -8,15 +8,19 @@ namespace BusRejser.Services
 		private readonly BadgeRepository _badgeRepository;
 		private readonly UserBadgeRepository _userBadgeRepository;
 		private readonly BadgeEngine _badgeEngine;
+		private readonly TravelHistoryService _travelHistoryService;
 
 		public BadgeService(
 			BadgeRepository badgeRepository,
 			UserBadgeRepository userBadgeRepository,
-			BadgeEngine badgeEngine)
+			BadgeEngine badgeEngine,
+			TravelHistoryService travelHistoryService
+			)
 		{
 			_badgeRepository = badgeRepository;
 			_userBadgeRepository = userBadgeRepository;
 			_badgeEngine = badgeEngine;
+			_travelHistoryService = travelHistoryService;
 		}
 
 		public List<BadgeResponse> GetAllActive()
@@ -40,6 +44,8 @@ namespace BusRejser.Services
 
 		public List<UserBadgeResponse> GetByUserId(int userId)
 		{
+			_travelHistoryService.SyncCompletedTripsForUser(userId);
+
 			var userBadges = _userBadgeRepository.GetByUserIdWithBadge(userId);
 
 			return userBadges.Select(ub => new UserBadgeResponse
