@@ -51,7 +51,7 @@ namespace BusRejser.Services
 				"LastMinute" => HasLastMinuteBooking(badge, history),
 				"UniqueDestinations" => HasUniqueDestinations(badge, history),
 				"BackToBack" => HasBackToBackTrips(badge, history),
-				"FirstBlood" => HasFirstBlood(badge,history),
+				//"FirstBlood" => HasFirstBlood(badge, history),
 				"DoubleTrouble" => HasDoubleTrouble(badge, history),
 				"NightRider" => HasNightRider(badge, history),
 
@@ -113,12 +113,12 @@ namespace BusRejser.Services
 			return false;
 		}
 
-		private bool HasFirstBlood(Badge badge, List<TravelHistory> history)
-		{
-			// First Blood: Vær den første til at booke en rejse
-			return history.Any(x => x.Booking != null && x.Rejse != null) &&
-				   history.OrderBy(x => x.Booking!.CreatedAt).First().UserId == history.First().UserId;
-		}
+		//private bool HasFirstBlood(Badge badge, List<TravelHistory> history)
+		//{
+		//	// First Blood: Vær den første til at booke en rejse
+		//	return history.Any(x => x.Booking != null && x.Rejse != null) &&
+		//		   history.OrderBy(x => x.Booking!.CreatedAt).First().UserId == history.First().UserId;
+		//}
 
 		private bool HasDoubleTrouble(Badge badge, List<TravelHistory> history)
 		{

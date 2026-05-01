@@ -16,6 +16,8 @@ namespace BusRejserLibrary.Models
 		public string Region { get; set; }= string.Empty;
 		public string? Municipality { get; set; } //JSON eller string
 
+		public string Slug { get; set; } = string.Empty;
+
 		public string IconUrl { get; set; } = string.Empty;
 
 		public string RuleType { get; set; } = string.Empty;

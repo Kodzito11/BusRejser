@@ -33,6 +33,7 @@ namespace BusRejserLibrary.Database
 			modelBuilder.Entity<Facilitet>().ToTable("facilitet");
 			modelBuilder.Entity<PasswordResetToken>().ToTable("password_reset_tokens");
 			modelBuilder.Entity<RefreshToken>().ToTable("refresh_tokens");
+
 			modelBuilder.Entity<TravelHistory>().ToTable("travel_history");
 			modelBuilder.Entity<VisitedLocation>().ToTable("visited_locations");
 			modelBuilder.Entity<Badge>().ToTable("badges");
@@ -200,6 +201,13 @@ namespace BusRejserLibrary.Database
 
 				entity.Property(x => x.RuleValue)
 					.HasMaxLength(100);
+
+				entity.Property(x => x.Slug)
+					.IsRequired()
+					.HasMaxLength(120);
+
+				entity.HasIndex(x => x.Slug)
+					.IsUnique();
 			});
 
 			modelBuilder.Entity<UserBadge>(entity =>
@@ -242,6 +250,7 @@ namespace BusRejserLibrary.Database
 				entity.HasIndex(x => new { x.UserId, x.RejseId })
 					.IsUnique();
 			});
+
 			modelBuilder.Entity<VisitedLocation>(entity =>
 			{
 				entity.HasKey(x => x.VisitedLocationId);
