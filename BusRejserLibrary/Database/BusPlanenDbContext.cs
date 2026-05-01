@@ -180,6 +180,7 @@ namespace BusRejserLibrary.Database
 					.HasMaxLength(100);
 
 				entity.Property(x => x.Description)
+					.IsRequired()
 					.HasMaxLength(500);
 
 				entity.Property(x => x.Country)
