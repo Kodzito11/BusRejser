@@ -1,5 +1,7 @@
 ﻿using BusRejserLibrary.Database;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using BusRejserLibrary.Models;
 
 namespace BusRejserLibrary.Repositories
 {
@@ -17,7 +19,7 @@ namespace BusRejserLibrary.Repositories
 			var bus = _context.Buses
 				.AsNoTracking()
 				.Include(x => x.Faceliteter)
-				.FirstOrDefault(x => x.busId == busId);
+				.FirstOrDefault(x => x.BusId == busId);
 
 			if (bus == null)
 				return new List<int>();
@@ -29,7 +31,7 @@ namespace BusRejserLibrary.Repositories
 		{
 			var bus = _context.Buses
 				.Include(x => x.Faceliteter)
-				.FirstOrDefault(x => x.busId == busId);
+				.FirstOrDefault(x => x.BusId == busId);
 
 			var facilitet = _context.Faciliteter
 				.FirstOrDefault(x => x.Id == facilitetId);
@@ -50,7 +52,7 @@ namespace BusRejserLibrary.Repositories
 		{
 			var bus = _context.Buses
 				.Include(x => x.Faceliteter)
-				.FirstOrDefault(x => x.busId == busId);
+				.FirstOrDefault(x => x.BusId == busId);
 
 			if (bus == null)
 				return false;

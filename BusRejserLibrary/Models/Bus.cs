@@ -1,29 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using BusRejserLibrary.Enums;
 
 namespace BusRejserLibrary.Models
 {
 
-	public enum BusStatus
-	{
-		Aktiv,
-		Inaktiv,
-		Vedligeholdelse
-	}
-
-	public enum BusType
-	{
-		StorTurBus,
-		MiniBus,
-		VIPBus,
-		Shuttle,
-		Andet
-	}
-
 	public class Bus
 	{
-		public int busId { get; set; }
+		public int BusId { get; set; }
 		public string Registreringnummer { get; set; }
 		public string Model { get; set; }
 		public string Busselskab { get; set; }
@@ -39,8 +24,6 @@ namespace BusRejserLibrary.Models
 			Model = string.Empty;
 			Busselskab = string.Empty;
 		}
-
-		///Factory method
 		private Bus
 			(
 			string regNr,
@@ -76,7 +59,7 @@ namespace BusRejserLibrary.Models
 				throw new ArgumentNullException("Registreingsnummer Kræves.");
 
 			if (string.IsNullOrWhiteSpace(model))
-				throw new ArgumentNullException("model");
+				throw new ArgumentNullException(nameof(model));
 
 			if (kapasitet <= 0)
 				throw new ArgumentOutOfRangeException(nameof(kapasitet));
@@ -84,8 +67,6 @@ namespace BusRejserLibrary.Models
 			return new Bus(regNr, model, busselskab, status, type, kapasitet, imageUrl);
 
 		}
-
-		/// Domain method
 
 		public void AddFacilitet(Facilitet facilitet)
 		{

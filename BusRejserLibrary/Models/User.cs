@@ -29,7 +29,7 @@ namespace BusRejserLibrary.Models
 
 		public List<UserBadge> UserBadges { get; set; } = new();
 
-		public UserRole Role { get; set; } = Enums.UserRole.Kunde;
+		public UserRole Role { get; set; } = UserRole.Kunde;
 
 		public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 		public DateTime? UpdatedAt { get; set; }

@@ -9,7 +9,7 @@ namespace BusRejser.Mappers
 		{
 			return new BusResponse
 			{
-				BusId = bus.busId,
+				BusId = bus.BusId,
 				Registreringnummer = bus.Registreringnummer,
 				Model = bus.Model,
 				Busselskab = bus.Busselskab,
