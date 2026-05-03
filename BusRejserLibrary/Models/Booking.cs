@@ -40,6 +40,9 @@ namespace BusRejserLibrary.Models
 			Status = BookingStatus.Pending;
 			BookingReference = GenerateReference();
 		}
+		private Booking()
+		{
+		}
 
 		public static Booking Create(
 			int rejseId,

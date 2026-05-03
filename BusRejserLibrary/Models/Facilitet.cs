@@ -32,6 +32,9 @@ namespace BusRejserLibrary.Models
 			IsActive = isActive;
 
 		}
+		private Facilitet()
+		{
+		}
 
 		public static Facilitet Create(string name, string description, decimal extraPrice, FacilitetType type, bool isActive)
 		{

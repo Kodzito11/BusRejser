@@ -21,9 +21,10 @@ namespace BusRejserLibrary.Models
 
 
 		public string Destination { get; set; } = string.Empty;
-		public string? Country { get; set; } = string.Empty;
-		public string? City { get; set; } = string.Empty;
-		public string? Region { get; set; } = string.Empty;
+
+		public string Country { get; set; } = string.Empty;
+		public string City { get; set; } = string.Empty;
+		public string Region { get; set; } = string.Empty;
 		public string? Municipality { get; set; }
 
 		public DateTime CompletedAt { get; set; } = DateTime.UtcNow;

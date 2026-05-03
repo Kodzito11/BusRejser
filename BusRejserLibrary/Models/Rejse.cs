@@ -64,6 +64,9 @@ namespace BusRejserLibrary.Models
 			IsFeatured = isFeatured;
 			IsPublished = isPublished;
 		}
+		private Rejse()
+		{
+		}
 
 		public static Rejse Create(
 			string title,
