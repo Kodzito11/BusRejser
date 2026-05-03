@@ -18,19 +18,19 @@ namespace BusRejserLibrary.Repositories
 		{
 			var bus = _context.Buses
 				.AsNoTracking()
-				.Include(x => x.Faceliteter)
+				.Include(x => x.Faciliteter)
 				.FirstOrDefault(x => x.BusId == busId);
 
 			if (bus == null)
 				return new List<int>();
 
-			return bus.Faceliteter.Select(x => x.Id).ToList();
+			return bus.Faciliteter.Select(x => x.Id).ToList();
 		}
 
 		public bool Add(int busId, int facilitetId)
 		{
 			var bus = _context.Buses
-				.Include(x => x.Faceliteter)
+				.Include(x => x.Faciliteter)
 				.FirstOrDefault(x => x.BusId == busId);
 
 			var facilitet = _context.Faciliteter
@@ -39,10 +39,10 @@ namespace BusRejserLibrary.Repositories
 			if (bus == null || facilitet == null)
 				return false;
 
-			if (bus.Faceliteter.Any(x => x.Id == facilitetId))
+			if (bus.Faciliteter.Any(x => x.Id == facilitetId))
 				return true;
 
-			bus.Faceliteter.Add(facilitet);
+			bus.Faciliteter.Add(facilitet);
 			_context.SaveChanges();
 
 			return true;
@@ -51,17 +51,17 @@ namespace BusRejserLibrary.Repositories
 		public bool Remove(int busId, int facilitetId)
 		{
 			var bus = _context.Buses
-				.Include(x => x.Faceliteter)
+				.Include(x => x.Faciliteter)
 				.FirstOrDefault(x => x.BusId == busId);
 
 			if (bus == null)
 				return false;
 
-			var facilitet = bus.Faceliteter.FirstOrDefault(x => x.Id == facilitetId);
+			var facilitet = bus.Faciliteter.FirstOrDefault(x => x.Id == facilitetId);
 			if (facilitet == null)
 				return false;
 
-			bus.Faceliteter.Remove(facilitet);
+			bus.Faciliteter.Remove(facilitet);
 			_context.SaveChanges();
 
 			return true;

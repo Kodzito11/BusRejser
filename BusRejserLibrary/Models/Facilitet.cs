@@ -17,8 +17,8 @@ namespace BusRejserLibrary.Models
 	public class Facilitet
 	{
 		public int Id { get; private set; }
-		public string Name { get; private set; }
-		public string Description { get; private set; }
+		public string Name { get; private set; } = string.Empty;
+		public string Description { get; private set; } = string.Empty;
 		public decimal ExtraPrice { get; private set; }
 		public bool IsActive { get; private set; }
 		public FacilitetType Type { get; private set; }

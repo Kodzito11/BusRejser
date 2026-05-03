@@ -5,10 +5,10 @@ namespace BusRejserLibrary.Models
 	public class Rejse
 	{
 		public int RejseId { get; set; }
-		public string Title { get; set; }
-		public string Destination { get; set; }
-		public string Country { get; set; }
-		public string City { get; set; }
+		public string Title { get; set; } = string.Empty;
+		public string Destination { get; set; } = string.Empty;
+		public string Country { get; set; } = string.Empty;
+		public string City { get; set; } = string.Empty;
 		public string? Region { get; set; }
 		public string? Municipality { get; set; }
 		public DateTime StartAt { get; set; }

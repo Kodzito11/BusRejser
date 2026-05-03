@@ -28,7 +28,7 @@ namespace BusRejserLibrary.Repositories
 		{
 			return _context.Buses
 				.AsNoTracking()
-				.Include(x => x.Faceliteter)
+				.Include(x => x.Faciliteter)
 				.FirstOrDefault(x => x.BusId == id);
 		}
 
@@ -36,7 +36,7 @@ namespace BusRejserLibrary.Repositories
 		{
 			return _context.Buses
 				.AsNoTracking()
-				.Include(x => x.Faceliteter)
+				.Include(x => x.Faciliteter)
 				.ToList();
 		}
 
@@ -51,12 +51,12 @@ namespace BusRejserLibrary.Repositories
 			if (existing == null)
 				return false;
 
-			existing.Registreringnummer = bus.Registreringnummer;
+			existing.Registreringsnummer = bus.Registreringsnummer;
 			existing.Model = bus.Model;
 			existing.Busselskab = bus.Busselskab;
 			existing.Status = bus.Status;
 			existing.Type = bus.Type;
-			existing.Kapasitet = bus.Kapasitet;
+			existing.Kapacitet = bus.Kapacitet;
 			existing.ImageUrl = bus.ImageUrl;
 
 			_context.SaveChanges();

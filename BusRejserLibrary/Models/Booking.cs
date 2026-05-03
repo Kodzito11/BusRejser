@@ -11,10 +11,10 @@ namespace BusRejserLibrary.Models
 		public Rejse? Rejse { get; set; }
 
 		public int? UserId { get; private set; }
-		public string KundeNavn { get; private set; }
-		public string KundeEmail { get; private set; }
+		public string KundeNavn { get; private set; } = string.Empty;
+		public string KundeEmail { get; private set; } = string.Empty;
 		public int AntalPladser { get; private set; }
-		public string BookingReference { get; private set; } = "";
+		public string BookingReference { get; private set; } = string.Empty;
 		public string? StripeSessionId { get; private set; }
 		public string? StripePaymentIntentId { get; private set; }
 		public decimal TotalPrice { get; private set; }

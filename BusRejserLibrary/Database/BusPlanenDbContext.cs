@@ -26,9 +26,17 @@ namespace BusRejserLibrary.Database
 		{
 			base.OnModelCreating(modelBuilder);
 
-			modelBuilder.Entity<User>().ToTable("users");
+			modelBuilder.Entity<User>()
+				.ToTable(t => t.HasCheckConstraint(
+					"CK_users_role",
+					"Role IN (1, 2, 3)"
+				));
 			modelBuilder.Entity<Rejse>().ToTable("rejse");
-			modelBuilder.Entity<Booking>().ToTable("booking");
+			modelBuilder.Entity<Booking>()
+				.ToTable(t => t.HasCheckConstraint(
+					"CK_booking_status",
+					"Status IN (1, 2, 3, 4)"
+				));
 			modelBuilder.Entity<Bus>().ToTable("bus");
 			modelBuilder.Entity<Facilitet>().ToTable("facilitet");
 			modelBuilder.Entity<PasswordResetToken>().ToTable("password_reset_tokens");
@@ -153,7 +161,7 @@ namespace BusRejserLibrary.Database
 				.IsConcurrencyToken();
 
 			modelBuilder.Entity<Bus>()
-				.HasMany(x => x.Faceliteter)
+				.HasMany(x => x.Faciliteter)
 				.WithMany()
 				.UsingEntity<Dictionary<string, object>>(
 					"bus_facilitet",
@@ -187,7 +195,6 @@ namespace BusRejserLibrary.Database
 					.HasMaxLength(100);
 
 				entity.Property(x => x.Region)
-					.IsRequired()
 					.HasMaxLength(100);
 
 				entity.Property(x => x.Municipality)

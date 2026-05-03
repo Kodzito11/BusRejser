@@ -256,7 +256,8 @@ builder.Services.AddScoped<RefreshTokenRepository>();
 builder.Services.AddScoped<TravelHistoryRepository>();
 builder.Services.AddScoped<UserBadgeRepository>();
 builder.Services.AddScoped<BadgeRepository>();
-
+builder.Services.AddScoped<VisitedLocationRepository>();
+builder.Services.AddScoped<ProgressionService>();
 
 
 builder.Services.AddScoped<IRejseRepository, RejseRepository>();

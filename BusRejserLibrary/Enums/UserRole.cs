@@ -8,8 +8,9 @@ namespace BusRejserLibrary.Enums
 {
 		public enum UserRole
 		{
-			Admin = 0,
-			Medarbejder = 1,
-			Kunde = 2
+			None = 0,
+			Kunde = 1,
+			Medarbejder = 2,
+			Admin = 3
 		}
 }

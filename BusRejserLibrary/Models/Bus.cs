@@ -9,18 +9,18 @@ namespace BusRejserLibrary.Models
 	public class Bus
 	{
 		public int BusId { get; set; }
-		public string Registreringnummer { get; set; }
+		public string Registreringsnummer { get; set; }
 		public string Model { get; set; }
 		public string Busselskab { get; set; }
 		public BusStatus Status { get; set; }
 		public BusType Type { get; set; }
-		public int Kapasitet { get; set; }
-		public List<Facilitet> Faceliteter { get; set; } = new();
+		public int Kapacitet { get; set; }
+		public List<Facilitet> Faciliteter { get; set; } = new();
 		public string? ImageUrl { get; set; }
 
 		private Bus()
 		{
-			Registreringnummer = string.Empty;
+			Registreringsnummer = string.Empty;
 			Model = string.Empty;
 			Busselskab = string.Empty;
 		}
@@ -31,16 +31,16 @@ namespace BusRejserLibrary.Models
 			string busselskab,
 			BusStatus status,
 			BusType type,
-			int kapasitet,
+			int kapacitet,
 			string? imageUrl
 			)
 		{
-			Registreringnummer = regNr;
+			Registreringsnummer = regNr;
 			Model = model;
 			Busselskab = busselskab;
 			Status = status;
 			Type = type;
-			Kapasitet = kapasitet;
+			Kapacitet = kapacitet;
 			ImageUrl = imageUrl;
 		}
 
@@ -74,7 +74,7 @@ namespace BusRejserLibrary.Models
 				throw new ArgumentNullException(nameof(facilitet));
 
 
-			Faceliteter.Add(facilitet);
+			Faciliteter.Add(facilitet);
 		}
 
 		public void SetStatus(BusStatus newStatus)

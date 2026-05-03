@@ -8,10 +8,10 @@ namespace BusRejserLibrary.Enums
 {
 	public enum BadgeTier
 	{
-		Bronze,
-		Silver,
-		Gold,
-		Diamond,
-		Platinum
+		Bronze = 1,
+		Silver = 2,
+		Gold = 3,
+		Diamond = 4,
+		Platinum = 5,
 	}
 }

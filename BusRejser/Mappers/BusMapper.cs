@@ -10,12 +10,12 @@ namespace BusRejser.Mappers
 			return new BusResponse
 			{
 				BusId = bus.BusId,
-				Registreringnummer = bus.Registreringnummer,
+				Registreringnummer = bus.Registreringsnummer,
 				Model = bus.Model,
 				Busselskab = bus.Busselskab,
 				Status = bus.Status,
 				Type = bus.Type,
-				Kapasitet = bus.Kapasitet,
+				Kapasitet = bus.Kapacitet,
 				ImageUrl = bus.ImageUrl
 			};
 		}

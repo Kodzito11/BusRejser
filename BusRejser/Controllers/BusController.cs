@@ -61,10 +61,10 @@ namespace BusRejser.Controllers
 			if (bus == null)
 				return NotFound(new ErrorResponse { Message = "Bus blev ikke fundet." });
 
-			bus.Registreringnummer = request.Registreringnummer;
+			bus.Registreringsnummer = request.Registreringnummer;
 			bus.Model = request.Model;
 			bus.Busselskab = request.Busselskab;
-			bus.Kapasitet = request.Kapasitet;
+			bus.Kapacitet = request.Kapasitet;
 			bus.SetStatus(request.Status);
 			bus.Type = request.Type;
 

@@ -247,6 +247,9 @@ namespace BusRejser.Services
 
 		private void EnsureUserCanAuthenticate(User user)
 		{
+			if (user.Role == BusRejserLibrary.Enums.UserRole.None)
+				throw new UnauthorizedException("Bruger mangler gyldig rolle.");
+
 			if (!user.IsActive)
 				throw new UnauthorizedException("Brugeren er deaktiveret.");
 
