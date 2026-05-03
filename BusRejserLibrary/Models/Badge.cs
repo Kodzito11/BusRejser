@@ -12,9 +12,9 @@ namespace BusRejserLibrary.Models
 		public int BadgeId { get; set; }
 		public string BadgeName { get; set; } = null!;
 		public string Description { get; set; } = null!;
-		public string Country { get; set; } = string.Empty;
-		public string Region { get; set; }= string.Empty;
-		public string? Municipality { get; set; } //JSON eller string
+		public string? Country { get; set; }
+		public string? Region { get; set; }
+		public string? Municipality { get; set; } 
 
 		public string Slug { get; set; } = string.Empty;
 

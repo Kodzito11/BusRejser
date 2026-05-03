@@ -50,7 +50,7 @@ namespace BusRejserLibrary.Models
 			string busselskab,
 			BusStatus status,
 			BusType type,
-			int kapasitet,
+			int kapacitet,
 			string imageUrl
 			)
 		{
@@ -61,10 +61,10 @@ namespace BusRejserLibrary.Models
 			if (string.IsNullOrWhiteSpace(model))
 				throw new ArgumentNullException(nameof(model));
 
-			if (kapasitet <= 0)
-				throw new ArgumentOutOfRangeException(nameof(kapasitet));
+			if (kapacitet <= 0)
+				throw new ArgumentOutOfRangeException(nameof(kapacitet));
 
-			return new Bus(regNr, model, busselskab, status, type, kapasitet, imageUrl);
+			return new Bus(regNr, model, busselskab, status, type, kapacitet, imageUrl);
 
 		}
 

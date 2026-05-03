@@ -27,15 +27,15 @@ namespace BusRejserLibrary.Database
 			base.OnModelCreating(modelBuilder);
 
 			modelBuilder.Entity<User>()
-				.ToTable(t => t.HasCheckConstraint(
+				.ToTable("users", t => t.HasCheckConstraint(
 					"CK_users_role",
 					"Role IN (1, 2, 3)"
 				));
 			modelBuilder.Entity<Rejse>().ToTable("rejse");
 			modelBuilder.Entity<Booking>()
-				.ToTable(t => t.HasCheckConstraint(
+				.ToTable("booking", t => t.HasCheckConstraint(
 					"CK_booking_status",
-					"Status IN (1, 2, 3, 4)"
+					"Status IN (0, 1, 2, 3)"
 				));
 			modelBuilder.Entity<Bus>().ToTable("bus");
 			modelBuilder.Entity<Facilitet>().ToTable("facilitet");
