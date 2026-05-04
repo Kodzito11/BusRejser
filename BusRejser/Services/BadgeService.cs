@@ -7,18 +7,15 @@ namespace BusRejser.Services
 	{
 		private readonly BadgeRepository _badgeRepository;
 		private readonly UserBadgeRepository _userBadgeRepository;
-		private readonly BadgeEngine _badgeEngine;
 		private readonly ProgressionService _progressionService;
 
 		public BadgeService(
 			BadgeRepository badgeRepository,
 			UserBadgeRepository userBadgeRepository,
-			BadgeEngine badgeEngine,
 			ProgressionService progressionService)
 		{
 			_badgeRepository = badgeRepository;
 			_userBadgeRepository = userBadgeRepository;
-			_badgeEngine = badgeEngine;
 			_progressionService = progressionService;
 		}
 

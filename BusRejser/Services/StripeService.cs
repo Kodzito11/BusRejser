@@ -41,6 +41,13 @@ namespace BusRejser.Services
 			CreateCheckoutSessionRequest request,
 			int? userId)
 		{
+
+			if (string.IsNullOrWhiteSpace(request.KundeNavn))
+				throw new ValidationException("Kundenavn kræves.");
+
+			if (string.IsNullOrWhiteSpace(request.KundeEmail))
+				throw new ValidationException("Kundeemail kræves.");
+
 			if (request == null)
 			{
 				_logger.LogWarning("CreateCheckoutSession called with null request");
@@ -196,8 +203,9 @@ namespace BusRejser.Services
 			);
 
 			_logger.LogInformation(
-				"Stripe webhook event constructed successfully. EventType {EventType}",
-				stripeEvent.Type
+				"Stripe event type: {EventType}, DataObjectType: {ObjectType}",
+				stripeEvent.Type,
+				stripeEvent.Data.Object?.GetType().FullName ?? "null"
 			);
 
 			if (stripeEvent.Type != EventTypes.CheckoutSessionCompleted)
@@ -316,6 +324,14 @@ namespace BusRejser.Services
 			}
 
 			var metadata = session.Metadata;
+			_logger.LogInformation(
+				"Stripe checkout session metadata for {SessionId}: {Metadata}",
+				session.Id,
+				metadata == null
+					? "null"
+					: string.Join(", ", metadata.Select(x => $"{x.Key}={x.Value}"))
+			);
+
 			if (metadata == null)
 			{
 				_logger.LogError(

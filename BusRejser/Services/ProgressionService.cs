@@ -66,7 +66,9 @@ namespace BusRejser.Services
 			return new ProgressionMapResponse
 			{
 				VisitedLocationCount = locations.Count,
+
 				VisitedCountryCount = locations
+					.Where(x => !string.IsNullOrWhiteSpace(x.Country))
 					.Select(x => x.Country.Trim().ToLowerInvariant())
 					.Distinct()
 					.Count(),
@@ -84,7 +86,29 @@ namespace BusRejser.Services
 					FirstVisitedAt = x.FirstVisitedAt,
 					LastVisitedAt = x.LastVisitedAt,
 					HasCoordinates = x.Latitude.HasValue && x.Longitude.HasValue
-				}).ToList()
+				}).ToList(),
+
+				Regions = locations
+					.GroupBy(x => new
+					{
+						Country = string.IsNullOrWhiteSpace(x.Country)
+							? "Unknown"
+							: x.Country.Trim(),
+
+						Region = string.IsNullOrWhiteSpace(x.Region)
+							? "Unknown"
+							: x.Region.Trim()
+					})
+					.Select(g => new RegionProgressResponse
+					{
+						Country = g.Key.Country,
+						Region = g.Key.Region,
+						VisitedLocationCount = g.Count(),
+						TotalVisitCount = g.Sum(x => x.VisitCount),
+						LastVisitedAt = g.Max(x => x.LastVisitedAt)
+					})
+					.OrderByDescending(x => x.LastVisitedAt)
+					.ToList()
 			};
 		}
 	}

@@ -1,29 +1,24 @@
 ﻿using BusRejser.DTOs;
-using BusRejserLibrary.Enums;
-using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
 
 namespace BusRejser.Services
 {
 	public class TravelHistoryService
 	{
-		private readonly IBookingRepository _bookingRepository;
 		private readonly TravelHistoryRepository _travelHistoryRepository;
-		private readonly BadgeEngine _badgeEngine;
+		private readonly ProgressionService _progressionService;
 
 		public TravelHistoryService(
-			IBookingRepository bookingRepository,
 			TravelHistoryRepository travelHistoryRepository,
-			BadgeEngine badgeEngine)
+			ProgressionService progressionService)
 		{
-			_bookingRepository = bookingRepository;
 			_travelHistoryRepository = travelHistoryRepository;
-			_badgeEngine = badgeEngine;
+			_progressionService = progressionService;
 		}
 
 		public List<TravelHistoryResponse> GetByUserId(int userId)
 		{
-			SyncCompletedTripsForUser(userId);
+			_progressionService.SyncUserProgress(userId);
 
 			return _travelHistoryRepository.GetByUserId(userId)
 				.Select(x => new TravelHistoryResponse
@@ -43,33 +38,7 @@ namespace BusRejser.Services
 
 		public void SyncCompletedTripsForUser(int userId)
 		{
-			var bookings = _bookingRepository.GetCompletedPaidWithRejseByUserId(userId);
-
-			foreach (var booking in bookings)
-			{
-				if (_travelHistoryRepository.ExistsByBookingId(userId, booking.BookingId))
-					continue;
-
-				var rejse = booking.Rejse;
-				if (rejse == null)
-					continue;
-
-				_travelHistoryRepository.Create(new TravelHistory
-				{
-					UserId = userId,
-					RejseId = rejse.RejseId,
-					BookingId = booking.BookingId,
-					CompletedAt = rejse.EndAt,
-
-					Destination = rejse.Destination,
-					Country = rejse.Country,
-					City = rejse.City,
-					Region = rejse.Region,
-					Municipality = rejse.Municipality
-				});
-			}
-
-			_badgeEngine.EvaluateUserBadges(userId);
+			_progressionService.SyncUserProgress(userId);
 		}
 	}
 }
