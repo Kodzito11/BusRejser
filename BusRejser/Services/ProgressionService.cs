@@ -47,7 +47,7 @@ namespace BusRejser.Services
 					Country = rejse.Country,
 					City = rejse.City,
 					Region = rejse.Region,
-					Municipality = rejse.Municipality
+					Municipality = rejse.Municipality,
 					Latitude = rejse.Latitude,
 					Longitude = rejse.Longitude
 				};
