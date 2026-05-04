@@ -42,6 +42,7 @@ namespace BusRejserLibrary.Repositories
 				x.Country == country &&
 				x.Region == region);
 
+
 			if (existing == null)
 			{
 				_context.VisitedLocations.Add(new VisitedLocation
@@ -51,6 +52,8 @@ namespace BusRejserLibrary.Repositories
 					Country = country,
 					Region = region,
 					Municipality = history.Municipality,
+					Latitude = history.Latitude,
+					Longitude = history.Longitude,
 					FirstVisitedAt = history.CompletedAt,
 					LastVisitedAt = history.CompletedAt,
 					VisitCount = 1
@@ -63,6 +66,12 @@ namespace BusRejserLibrary.Repositories
 
 				if (existing.FirstVisitedAt > history.CompletedAt)
 					existing.FirstVisitedAt = history.CompletedAt;
+
+				if (!existing.Latitude.HasValue && history.Latitude.HasValue)
+					existing.Latitude = history.Latitude;
+
+				if (!existing.Longitude.HasValue && history.Longitude.HasValue)
+					existing.Longitude = history.Longitude;
 			}
 
 			_context.SaveChanges();

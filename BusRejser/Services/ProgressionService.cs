@@ -48,6 +48,8 @@ namespace BusRejser.Services
 					City = rejse.City,
 					Region = rejse.Region,
 					Municipality = rejse.Municipality
+					Latitude = rejse.Latitude,
+					Longitude = rejse.Longitude
 				};
 
 				_travelHistoryRepository.Create(history);

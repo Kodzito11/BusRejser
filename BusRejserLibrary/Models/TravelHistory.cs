@@ -26,6 +26,8 @@ namespace BusRejserLibrary.Models
 		public string City { get; set; } = string.Empty;
 		public string Region { get; set; } = string.Empty;
 		public string? Municipality { get; set; }
+		public double? Latitude { get; set; }
+		public double? Longitude { get; set; }
 
 		public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
 	}
