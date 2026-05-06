@@ -21,6 +21,7 @@ namespace BusRejserLibrary.Database
 		public DbSet<VisitedLocation> VisitedLocations => Set<VisitedLocation>();
 		public DbSet<Badge> Badges => Set<Badge>();
 		public DbSet<UserBadge> UserBadges => Set<UserBadge>();
+		public DbSet<GeoNamePlace> GeoNamePlaces => Set<GeoNamePlace>();
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -285,6 +286,56 @@ namespace BusRejserLibrary.Database
 
 				entity.HasIndex(x => new { x.UserId, x.Name, x.Country, x.Region })
 					.IsUnique();
+			});
+
+			modelBuilder.Entity<GeoNamePlace>(entity =>
+			{
+				entity.ToTable("geoname_places");
+
+				entity.HasKey(x => x.GeoNameId);
+
+				entity.Property(x => x.GeoNameId)
+					.HasColumnName("geoname_id");
+
+				entity.Property(x => x.Name)
+					.HasColumnName("name")
+					.HasMaxLength(200)
+					.IsRequired();
+
+				entity.Property(x => x.AsciiName)
+					.HasColumnName("ascii_name")
+					.HasMaxLength(200);
+
+				entity.Property(x => x.CountryCode)
+					.HasColumnName("country_code")
+					.HasMaxLength(2)
+					.IsRequired();
+
+				entity.Property(x => x.Admin1Code)
+					.HasColumnName("admin1_code")
+					.HasMaxLength(20);
+
+				entity.Property(x => x.Latitude)
+					.HasColumnName("latitude");
+
+				entity.Property(x => x.Longitude)
+					.HasColumnName("longitude");
+
+				entity.Property(x => x.Population)
+					.HasColumnName("population");
+
+				entity.Property(x => x.FeatureClass)
+					.HasColumnName("feature_class")
+					.HasMaxLength(10);
+
+				entity.Property(x => x.FeatureCode)
+					.HasColumnName("feature_code")
+					.HasMaxLength(10);
+
+				entity.HasIndex(x => x.Name);
+				entity.HasIndex(x => x.AsciiName);
+				entity.HasIndex(x => x.CountryCode);
+				entity.HasIndex(x => new { x.CountryCode, x.Admin1Code });
 			});
 
 		}

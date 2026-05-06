@@ -258,6 +258,7 @@ builder.Services.AddScoped<UserBadgeRepository>();
 builder.Services.AddScoped<BadgeRepository>();
 builder.Services.AddScoped<VisitedLocationRepository>();
 builder.Services.AddScoped<ProgressionService>();
+builder.Services.AddScoped<GeoNamePlaceRepository>();
 
 
 builder.Services.AddScoped<IRejseRepository, RejseRepository>();
@@ -279,6 +280,7 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<BadgeService>();
 builder.Services.AddScoped<TravelHistoryService>();
 builder.Services.AddScoped<BadgeEngine>();
+builder.Services.AddScoped<GeoLookupService>();
 
 var app = builder.Build();
 
