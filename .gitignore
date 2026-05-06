@@ -363,3 +363,7 @@ MigrationBackup/
 FodyWeavers.xsd
 /BusRejser/appsettings.Development.json
 .env
+
+# GeoNames raw import files
+data/geonames/*.txt
+data/geonames/*.zip
