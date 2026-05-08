@@ -142,6 +142,20 @@ Webhook-endpointet er ikke rate limited, så Stripe ikke bliver blokeret af legi
 docker compose up -d
 ```
 
+## Database og migrations
+
+Database-schemaændringer skal håndteres gennem EF Core migrations.
+
+Data som badges, GeoNames-data, demo-rejser og testbrugere skal håndteres gennem seeders, importers eller kontrollerede scripts.
+
+Undgå manuelt at oprette eller ændre tabeller direkte i MySQL/DBeaver, medmindre der er en specifik nødsituation.
+
+De fulde regler er dokumenteret i:
+
+```text
+docs/DATABASE_RULES.md
+```
+
 ## Run
 
 ```powershell
@@ -323,6 +337,19 @@ The webhook endpoint is not rate limited to avoid blocking legitimate Stripe ret
 docker compose up -d
 ```
 
+## Database and migrations
+
+Database schema changes must be handled through EF Core migrations.
+
+Data such as badges, GeoNames data, demo trips, and test users must be handled through seeders, importers, or controlled scripts.
+
+Do not manually create or alter tables in MySQL/DBeaver unless there is a specific emergency reason.
+
+Full rules are documented in:
+
+```text
+docs/DATABASE_RULES.md
+```
 ## Run
 
 ```powershell
