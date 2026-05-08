@@ -15,21 +15,27 @@ namespace BusRejserLibrary.Repositories
 
 		public List<GeoNamePlace> Search(string query, int limit = 10)
 		{
-			var normalizedQuery = NormalizeSearch(query);
-
 			if (string.IsNullOrWhiteSpace(query))
 				return new List<GeoNamePlace>();
 
-			query = query.Trim();
+			query = query.Trim().ToLower();
 
-			return _context.GeoNamePlaces
+			var results = _context.GeoNamePlaces
 				.AsNoTracking()
-				.Where(x =>
-					x.Name.Contains(query) ||
-					(x.AsciiName != null && x.AsciiName.Contains(query)))
-				.OrderByDescending(x => x.Population)
+				.Where(place =>
+					place.Name.ToLower().Contains(query) ||
+					(place.AsciiName != null && place.AsciiName.ToLower().Contains(query)) ||
+					_context.GeoAlternateNames.Any(alt =>
+						alt.GeoNameId == place.GeoNameId &&
+						alt.AlternateName.ToLower().Contains(query)))
+				.OrderByDescending(place =>
+					place.Name.ToLower().StartsWith(query) ||
+					(place.AsciiName != null && place.AsciiName.ToLower().StartsWith(query)))
+				.ThenByDescending(place => place.Population)
 				.Take(limit)
 				.ToList();
+
+			return results;
 		}
 		private static string NormalizeSearch(string value)
 		{
