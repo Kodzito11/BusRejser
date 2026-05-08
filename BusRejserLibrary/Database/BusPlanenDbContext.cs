@@ -22,6 +22,7 @@ namespace BusRejserLibrary.Database
 		public DbSet<Badge> Badges => Set<Badge>();
 		public DbSet<UserBadge> UserBadges => Set<UserBadge>();
 		public DbSet<GeoNamePlace> GeoNamePlaces => Set<GeoNamePlace>();
+		public DbSet<GeoAlternateName> GeoAlternateNames => Set<GeoAlternateName>();
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -336,6 +337,24 @@ namespace BusRejserLibrary.Database
 				entity.HasIndex(x => x.AsciiName);
 				entity.HasIndex(x => x.CountryCode);
 				entity.HasIndex(x => new { x.CountryCode, x.Admin1Code });
+			});
+
+			modelBuilder.Entity<GeoAlternateName>(entity =>
+			{
+				entity.ToTable("geo_alternate_names");
+
+				entity.HasKey(x => x.GeoAlternateNameId);
+
+				entity.Property(x => x.AlternateName)
+					.HasMaxLength(200);
+
+				entity.Property(x => x.IsoLanguage)
+					.HasMaxLength(10);
+
+				entity.HasOne(x => x.GeoNamePlace)
+					.WithMany()
+					.HasForeignKey(x => x.GeoNameId)
+					.OnDelete(DeleteBehavior.Cascade);
 			});
 
 		}

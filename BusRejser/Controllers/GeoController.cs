@@ -17,13 +17,12 @@ namespace BusRejser.Controllers
 		}
 
 		[HttpGet("search")]
-		[Authorize(Roles = "Admin,Medarbejder")]
-		public ActionResult<IEnumerable<GeoNamePlaceResponse>> Search([FromQuery] string query)
+		public ActionResult<IEnumerable<GeoNamePlaceResponse>> Search([FromQuery] string q)
 		{
-			if (string.IsNullOrWhiteSpace(query))
+			if (string.IsNullOrWhiteSpace(q))
 				return BadRequest(new { message = "Query mangler." });
 
-			return Ok(_geoLookupService.Search(query));
+			return Ok(_geoLookupService.Search(q));
 		}
 	}
 }
