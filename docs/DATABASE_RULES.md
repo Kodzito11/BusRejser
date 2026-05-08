@@ -1,3 +1,136 @@
+# Dansk
+# Database Regler
+
+Denne fil definerer database-reglerne for BusPlanen/BusRejser.
+
+Målet er simpelt: undgå schema drift mellem Entity Framework migrations og MySQL.
+
+## Kerne-regel
+
+Schemaændringer håndteres gennem EF Core migrations.
+
+Data håndteres gennem seeders, importers eller kontrollerede SQL-scripts.
+
+De to ansvar må ikke blandes sammen.
+
+## Schema
+
+Brug EF Core migrations til:
+
+- Nye tabeller
+- Nye kolonner
+- Omdøbte kolonner
+- Foreign keys
+- Indexes
+- Required/nullable ændringer
+- Ændringer i relationer mellem entities
+
+Tilladt workflow:
+
+```bash
+dotnet ef migrations add BeskrivendeMigrationNavn
+dotnet ef database update
+```
+
+Hvis flere projekter er involveret:
+
+```bash
+dotnet ef migrations add BeskrivendeMigrationNavn --project BusRejserLibrary --startup-project BusRejserAPI
+dotnet ef database update --project BusRejserLibrary --startup-project BusRejserAPI
+```
+
+## Data
+
+Brug seeders/importers/scripts til:
+
+- Badges
+- Dummy-rejser
+- GeoNames steder
+- Geo alternate names
+- Testbrugere
+- Demo-data
+
+Eksempler:
+
+- `GeoImporter`
+- `GeoAlternateNameImporter`
+- Badge seeder
+- Dev data scripts
+
+## Forbudt
+
+Undgå dette medmindre der er en meget specifik nødsituation:
+
+- Manuelt `CREATE TABLE` i DBeaver/MySQL
+- Manuelt `ALTER TABLE` i DBeaver/MySQL
+- Slette migrations-filer efter de er delt eller kørt
+- Oprette en ny `InitialCreate` ovenpå en eksisterende database
+- Bruge `EnsureCreated()` sammen med migrations
+- Køre migrations mod én database mens appen peger på en anden database
+- Patche production-schema manuelt uden godkendt migration-script
+
+## Dev reset
+
+Kun til lokal udvikling er et fuldt reset tilladt, hvis databasen allerede er inkonsistent.
+
+Foretrukket reset-flow:
+
+```sql
+DROP DATABASE busplanen;
+CREATE DATABASE busplanen;
+```
+
+Derefter:
+
+```bash
+dotnet ef database update --project BusRejserLibrary --startup-project BusRejserAPI
+```
+
+Kør derefter seed/import-trin:
+
+```txt
+GeoImporter
+GeoAlternateNameImporter
+Badge seeder
+Dummy/test data scripts
+```
+
+Undgå at droppe enkelte tabeller én efter én, medmindre du bevidst håndterer en kendt foreign key-kæde.
+
+## Production
+
+Drop aldrig production-databasen.
+
+Brug aldrig lokal reset-logik i production.
+
+Production migration-flow:
+
+```bash
+dotnet ef migrations script --idempotent -o migration.sql --project BusRejserLibrary --startup-project BusRejserAPI
+```
+
+Gennemgå altid den genererede SQL før den køres mod production.
+
+Production-regler:
+
+- Tag altid backup før schemaændringer
+- Gennemgå genereret SQL
+- Foretræk idempotent migration scripts
+- Hold schemaændringer små
+- Bland ikke store data-importer med schema migrations
+- Kør geo-importer og badge-seeders separat fra schema migrations
+
+## Mental model
+
+```txt
+Migration = struktur
+Seeder/importer = data
+DBeaver = inspektion/backup, ikke schema-design
+```
+
+Hvis databasen og migrations er uenige, så stop og undersøg `__EFMigrationsHistory` før noget ændres.
+
+# English
 # Database Rules
 
 This file defines the database rules for BusPlanen/BusRejser.
