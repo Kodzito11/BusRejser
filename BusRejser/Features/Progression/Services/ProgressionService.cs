@@ -1,8 +1,8 @@
 ﻿using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
-using BusRejser.Services.Interfaces;
 using BusRejser.Features.Progression.DTOs;
-using BusRejser.Services;
+using BusRejser.Features.Badges.Services;
+using BusRejser.Features.Geo.Services.Interfaces;
 
 namespace BusRejser.Features.Progression.Services
 {
