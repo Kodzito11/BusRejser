@@ -1,8 +1,9 @@
 ﻿using BusRejser.DTOs;
 using BusRejser.Services.Interfaces;
-using BusRejserLibrary.Data;
+using BusRejser.Mappers;
 using BusRejserLibrary.Database;
 using Microsoft.EntityFrameworkCore;
+using BusRejserLibrary.Models;
 
 namespace BusRejser.Services
 {
@@ -31,7 +32,8 @@ namespace BusRejser.Services
 				.AsNoTracking()
 				.FirstOrDefault(x =>
 					x.Name.ToLower() == normalized ||
-					x.AsciiName.ToLower() == normalized);
+					x.Name.ToLower() == normalized ||
+					(x.AsciiName != null && x.AsciiName.ToLower() == normalized));
 
 			if (geoPlace == null)
 			{
@@ -57,16 +59,19 @@ namespace BusRejser.Services
 				};
 			}
 
+			var municipality = geoPlace.Name ?? string.Empty;
+
+			var region =
+				DenmarkRegionMapper.GetRegionForMunicipality(municipality)
+				?? geoPlace.Admin1Code
+				?? string.Empty;
+
 			return new NormalizedGeoResult
 			{
-				Country = geoPlace.Country ?? string.Empty,
-
-				Region = geoPlace.Admin1Name ?? string.Empty,
-
-				Municipality = geoPlace.Name ?? string.Empty,
-
+				Country = geoPlace.CountryCode,
+				Region = region,
+				Municipality = municipality,
 				Latitude = geoPlace.Latitude,
-
 				Longitude = geoPlace.Longitude,
 			};
 		}
