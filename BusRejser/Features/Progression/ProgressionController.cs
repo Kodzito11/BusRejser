@@ -1,11 +1,11 @@
 ﻿using BusRejser.Exceptions;
 using BusRejser.Features.Progression.DTOs;
-using BusRejser.Services;
+using BusRejser.Features.Progression.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace BusRejser.Controllers
+namespace BusRejser.Features.Progression
 {
 	[ApiController]
 	[Route("api/[controller]")]

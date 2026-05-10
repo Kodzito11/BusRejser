@@ -2,8 +2,9 @@
 using BusRejserLibrary.Repositories;
 using BusRejser.Services.Interfaces;
 using BusRejser.Features.Progression.DTOs;
+using BusRejser.Services;
 
-namespace BusRejser.Services
+namespace BusRejser.Features.Progression.Services
 {
 	public class ProgressionService
 	{
@@ -40,7 +41,7 @@ namespace BusRejser.Services
 				if (rejse == null)
 					continue;
 				var normalizedGeo = _geoNormalizationService.Normalize(rejse.Destination);
-				var history = new TravelHistory
+				var history = new BusRejserLibrary.Models.TravelHistory
 				{
 					UserId = userId,
 					RejseId = rejse.RejseId,

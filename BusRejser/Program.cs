@@ -1,4 +1,5 @@
 using BusRejser.Common.DTOs;
+using BusRejser.Features.Progression.Services;
 using BusRejser.Middleware;
 using BusRejser.Options;
 using BusRejser.Services;

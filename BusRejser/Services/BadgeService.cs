@@ -1,4 +1,5 @@
 ﻿using BusRejser.Features.Badges.DTOs;
+using BusRejser.Features.Progression.Services;
 using BusRejserLibrary.Repositories;
 
 namespace BusRejser.Services
