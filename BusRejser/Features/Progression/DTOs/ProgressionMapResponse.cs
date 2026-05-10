@@ -6,6 +6,8 @@
 		public int VisitedCountryCount { get; set; }
 		public List<VisitedLocationMapResponse> Locations { get; set; } = new();
 		public List<RegionProgressResponse> Regions { get; set; } = new();
+		public List<TerritoryProgressResponse> Territories { get; set; } = new();
+		public List<MunicipalityProgressResponse> Municipalities { get; set; } = new();
 	}
 
 	public class VisitedLocationMapResponse
