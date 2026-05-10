@@ -1,23 +1,27 @@
 ﻿using BusRejser.DTOs;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
+using BusRejser.Services.Interfaces;
 
 namespace BusRejser.Services
 {
 	public class ProgressionService
 	{
 		private readonly IBookingRepository _bookingRepository;
+		private readonly IGeoNormalizationService _geoNormalizationService;
 		private readonly TravelHistoryRepository _travelHistoryRepository;
 		private readonly VisitedLocationRepository _visitedLocationRepository;
 		private readonly BadgeEngine _badgeEngine;
 
 		public ProgressionService(
 			IBookingRepository bookingRepository,
+			IGeoNormalizationService geoNormalizationService,
 			TravelHistoryRepository travelHistoryRepository,
 			VisitedLocationRepository visitedLocationRepository,
 			BadgeEngine badgeEngine)
 		{
 			_bookingRepository = bookingRepository;
+			_geoNormalizationService = geoNormalizationService;
 			_travelHistoryRepository = travelHistoryRepository;
 			_visitedLocationRepository = visitedLocationRepository;
 			_badgeEngine = badgeEngine;
@@ -35,7 +39,7 @@ namespace BusRejser.Services
 				var rejse = booking.Rejse;
 				if (rejse == null)
 					continue;
-
+				var normalizedGeo = _geoNormalizationService.Normalize(rejse.Destination);
 				var history = new TravelHistory
 				{
 					UserId = userId,
@@ -44,12 +48,11 @@ namespace BusRejser.Services
 					CompletedAt = rejse.EndAt,
 
 					Destination = rejse.Destination,
-					Country = rejse.Country,
-					City = rejse.City,
-					Region = rejse.Region,
-					Municipality = rejse.Municipality,
-					Latitude = rejse.Latitude,
-					Longitude = rejse.Longitude
+					Country = normalizedGeo.Country,
+					Region = normalizedGeo.Region,
+					Municipality = normalizedGeo.Municipality,
+					Latitude = normalizedGeo.Latitude,
+					Longitude = normalizedGeo.Longitude
 				};
 
 				_travelHistoryRepository.Create(history);

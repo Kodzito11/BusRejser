@@ -18,25 +18,32 @@ namespace BusRejserLibrary.Repositories
 			if (string.IsNullOrWhiteSpace(query))
 				return new List<GeoNamePlace>();
 
-			query = query.Trim().ToLower();
+			var normalizedQuery = NormalizeSearch(query);
 
 			var results = _context.GeoNamePlaces
 				.AsNoTracking()
 				.Where(place =>
-					place.Name.ToLower().Contains(query) ||
-					(place.AsciiName != null && place.AsciiName.ToLower().Contains(query)) ||
+					place.Name.ToLower().Contains(normalizedQuery) ||
+					(place.AsciiName != null && place.AsciiName.ToLower().Contains(normalizedQuery)) ||
 					_context.GeoAlternateNames.Any(alt =>
 						alt.GeoNameId == place.GeoNameId &&
-						alt.AlternateName.ToLower().Contains(query)))
+						alt.AlternateName.ToLower().Contains(normalizedQuery)))
 				.OrderByDescending(place =>
-					place.Name.ToLower().StartsWith(query) ||
-					(place.AsciiName != null && place.AsciiName.ToLower().StartsWith(query)))
+					place.Name.ToLower().StartsWith(normalizedQuery))
+				.ThenByDescending(place =>
+					place.AsciiName != null &&
+					place.AsciiName.ToLower().StartsWith(normalizedQuery))
+				.ThenByDescending(place =>
+					_context.GeoAlternateNames.Any(alt =>
+						alt.GeoNameId == place.GeoNameId &&
+						alt.AlternateName.ToLower().StartsWith(normalizedQuery)))
 				.ThenByDescending(place => place.Population)
 				.Take(limit)
 				.ToList();
 
 			return results;
 		}
+
 		private static string NormalizeSearch(string value)
 		{
 			return value

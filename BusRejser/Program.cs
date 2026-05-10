@@ -1,10 +1,8 @@
-using System.Text;
-using System.Text.Json;
-using System.Threading.RateLimiting;
 using BusRejser.DTOs;
 using BusRejser.Middleware;
 using BusRejser.Options;
 using BusRejser.Services;
+using BusRejser.Services.Interfaces;
 using BusRejserLibrary.Database;
 using BusRejserLibrary.Repositories;
 using BusRejserLibrary.Services;
@@ -13,6 +11,9 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using System.Text;
+using System.Text.Json;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -260,7 +261,7 @@ builder.Services.AddScoped<VisitedLocationRepository>();
 builder.Services.AddScoped<ProgressionService>();
 builder.Services.AddScoped<GeoNamePlaceRepository>();
 
-
+builder.Services.AddScoped<IGeoNormalizationService, GeoNormalizationService>();
 builder.Services.AddScoped<IRejseRepository, RejseRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
