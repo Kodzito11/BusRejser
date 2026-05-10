@@ -1,4 +1,4 @@
-﻿using BusRejser.DTOs;
+﻿using BusRejser.Features.Facilities.DTOs;
 using BusRejserLibrary.Models;
 
 namespace BusRejser.Mappers

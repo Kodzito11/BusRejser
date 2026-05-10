@@ -1,4 +1,4 @@
-﻿using BusRejser.DTOs;
+﻿using BusRejser.Features.Geo.DTOs;
 using BusRejser.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

@@ -1,5 +1,5 @@
-﻿using BusRejser.DTOs;
-using BusRejser.Exceptions;
+﻿using BusRejser.Exceptions;
+using BusRejser.Features.TravelHistory.DTOs;
 using BusRejser.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

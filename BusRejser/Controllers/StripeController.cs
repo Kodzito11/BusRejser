@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using BusRejser.DTOs;
+using BusRejser.Features.Payments.DTOs;
 using BusRejser.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

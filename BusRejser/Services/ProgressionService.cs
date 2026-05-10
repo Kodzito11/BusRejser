@@ -1,7 +1,7 @@
-﻿using BusRejser.DTOs;
-using BusRejserLibrary.Models;
+﻿using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
 using BusRejser.Services.Interfaces;
+using BusRejser.Features.Progression.DTOs;
 
 namespace BusRejser.Services
 {

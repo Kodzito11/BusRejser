@@ -1,4 +1,4 @@
-﻿using BusRejser.DTOs;
+﻿using BusRejser.Features.Geo.DTOs;
 
 namespace BusRejser.Services.Interfaces
 {

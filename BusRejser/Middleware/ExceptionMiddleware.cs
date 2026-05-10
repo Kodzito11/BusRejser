@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
-using BusRejser.DTOs;
+using BusRejser.Common.DTOs;
 using BusRejser.Exceptions;
 
 namespace BusRejser.Middleware

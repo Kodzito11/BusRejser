@@ -1,5 +1,6 @@
-﻿using BusRejser.DTOs;
-using BusRejser.Exceptions;
+﻿using BusRejser.Exceptions;
+using BusRejser.Features.Auth.DTOs;
+using BusRejser.Features.Users.DTOs;
 using BusRejserLibrary.Repositories;
 
 namespace BusRejser.Services

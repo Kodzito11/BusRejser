@@ -1,4 +1,4 @@
-using BusRejser.DTOs;
+using BusRejser.Features.Auth.DTOs;
 using BusRejser.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;

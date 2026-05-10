@@ -1,5 +1,6 @@
-using BusRejser.DTOs;
+using BusRejser.Common.DTOs;
 using BusRejser.Exceptions;
+using BusRejser.Features.Auth.DTOs;
 using BusRejser.Options;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;

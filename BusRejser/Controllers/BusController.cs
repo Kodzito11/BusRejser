@@ -1,4 +1,5 @@
-﻿using BusRejser.DTOs;
+﻿using BusRejser.Common.DTOs;
+using BusRejser.Features.Buses.DTOs;
 using BusRejser.Mappers;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Services;

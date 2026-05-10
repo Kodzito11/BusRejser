@@ -1,5 +1,5 @@
-﻿using BusRejser.DTOs;
-using BusRejser.Exceptions;
+﻿using BusRejser.Exceptions;
+using BusRejser.Features.Payments.DTOs;
 using BusRejser.Options;
 using BusRejserLibrary.Repositories;
 using BusRejserLibrary.Services;

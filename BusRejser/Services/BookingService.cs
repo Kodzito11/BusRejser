@@ -1,5 +1,6 @@
-﻿using BusRejser.DTOs;
-using BusRejser.Exceptions;
+﻿using BusRejser.Exceptions;
+using BusRejser.Features.Bookings.DTOs;
+using BusRejser.Features.Payments.DTOs;
 using BusRejser.Mappers;
 using BusRejserLibrary.Enums;
 using BusRejserLibrary.Models;

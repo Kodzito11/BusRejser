@@ -1,9 +1,9 @@
-﻿using BusRejser.DTOs;
-using BusRejser.Services.Interfaces;
+﻿using BusRejser.Services.Interfaces;
 using BusRejser.Mappers;
 using BusRejserLibrary.Database;
 using Microsoft.EntityFrameworkCore;
 using BusRejserLibrary.Models;
+using BusRejser.Features.Geo.DTOs;
 
 namespace BusRejser.Services
 {
