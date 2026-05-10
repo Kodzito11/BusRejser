@@ -31,9 +31,8 @@ namespace BusRejser.Services
 			var geoPlace = _context.GeoNamePlaces
 				.AsNoTracking()
 				.FirstOrDefault(x =>
-					x.Name.ToLower() == normalized ||
-					x.Name.ToLower() == normalized ||
-					(x.AsciiName != null && x.AsciiName.ToLower() == normalized));
+				 x.Name.ToLower() == normalized ||
+				(x.AsciiName != null && x.AsciiName.ToLower() == normalized));
 
 			if (geoPlace == null)
 			{
@@ -68,7 +67,7 @@ namespace BusRejser.Services
 
 			return new NormalizedGeoResult
 			{
-				Country = geoPlace.CountryCode,
+				Country = geoPlace.CountryCode == "DK" ? "Denmark" : geoPlace.CountryCode,
 				Region = region,
 				Municipality = municipality,
 				Latitude = geoPlace.Latitude,
