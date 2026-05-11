@@ -291,6 +291,7 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<BadgeService>();
 builder.Services.AddScoped<TravelHistoryService>();
+builder.Services.AddScoped<QuestProgressService>();
 builder.Services.AddScoped<BadgeEngine>();
 builder.Services.AddScoped<GeoLookupService>();
 
