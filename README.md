@@ -1,7 +1,10 @@
 # Dansk
+
 # BusPlanen Backend (API)
 
-Backend API for BusPlanen. Haandterer rejser, bookinger, brugere og Stripe-betaling.
+Backend API for BusPlanen. Håndterer rejser, bookinger, brugere, Stripe-betaling, travel history, badges og progression.
+
+---
 
 ## Features
 
@@ -9,9 +12,18 @@ Backend API for BusPlanen. Haandterer rejser, bookinger, brugere og Stripe-betal
 - JWT authentication med roller
 - Stripe checkout og webhook-integration
 - Seat reservation uden overselling
+- Travel history
+- Badge system
+- Progression map
+- Territory progression
+- Municipality progression
+- Quest progression
+- GeoNames-baseret geo-normalisering
 - Global exception handling
 - Structured logging med Serilog
 - Correlation ID per request
+
+---
 
 ## Arkitektur
 
@@ -23,6 +35,29 @@ Controller -> Service -> Repository -> Database
 - Repositories håndterer databaseadgang
 - Controllers er tynde
 
+Feature-strukturen følger cirka:
+
+```text
+BusRejser/
+  Features/
+    Auth/
+    Bookings/
+    Buses/
+    Rejser/
+    Payments/
+    Progression/
+    Badges/
+    TravelHistory/
+    Geo/
+    Facilities/
+
+  Common/
+    DTOs/
+    Security/
+```
+
+---
+
 ## Booking flow
 
 ```text
@@ -33,11 +68,85 @@ Frontend -> Stripe Checkout -> Webhook -> BookingService -> DB
 - Webhook-flowet er gjort idempotent
 - Checkout-status er read-only
 
+---
+
+## Progression og gamification
+
+Backend håndterer brugerens rejseprogression gennem completed bookings.
+
+Flowet er:
+
+```text
+Completed booking
+-> SyncUserProgress
+-> TravelHistory
+-> VisitedLocation
+-> Progression map
+-> Badges / Quests
+```
+
+Progression består af:
+
+- `TravelHistory` for gennemførte rejser
+- `VisitedLocation` for aggregerede lokationer
+- `ProgressionMapResponse` til frontend map/dashboard
+- `TerritoryProgressResponse` til lande/territories
+- `MunicipalityProgressResponse` til kommuner
+- `QuestProgressResponse` til computed quests
+
+Quests er v1 computed-only:
+
+```text
+VisitedLocation + Territories + Municipalities
+-> QuestProgressService
+-> QuestProgressResponse
+```
+
+Det betyder:
+
+- ingen quest database endnu
+- ingen quest migrations endnu
+- backend ejer quest progress
+- frontend renderer kun quest data
+
+Geo-normalisering bruges til at oversætte destinationer til country, region, municipality og koordinater.
+
+---
+
+## Progression endpoints
+
+```text
+GET /api/Progression/map
+GET /api/Progression/quests
+```
+
+`/api/Progression/map` bruges af frontend progression dashboard og kortet.
+
+`/api/Progression/quests` returnerer brugerens computed quest progression.
+
+---
+
+## Badge flow
+
+Badges evalueres backend-side som del af progression sync.
+
+```text
+SyncUserProgress
+-> BadgeEngine
+-> UserBadges
+```
+
+Badges er persistent data, mens quests i v1 er computed data.
+
+---
+
 ## Krav
 
 - .NET 8 SDK
 - MySQL 8
 - Stripe test keys
+
+---
 
 ## Lokal setup uden committed secrets
 
@@ -51,8 +160,8 @@ Projektet er sat op til at bruge denne model:
 Det betyder i praksis:
 
 - repoet viser hvilke felter der findes
-- `appsettings.Development.json` maa gerne indeholde lokale dev-værdier, fordi den er ignoreret
-- production og CI må ikke bygge paa lokale filer med secrets
+- `appsettings.Development.json` må gerne indeholde lokale dev-værdier, fordi den er ignoreret
+- production og CI må ikke bygge på lokale filer med secrets
 - user-secrets eller environment variables er stadig den foretrukne vej til rigtige hemmeligheder
 
 `BusRejser/appsettings.Example.json` kan kopieres som udgangspunkt, hvis du vil have en lokal dev-fil.
@@ -97,6 +206,8 @@ $env:Email__Password="replace-with-email-password"
 $env:Email__From="noreply@example.com"
 ```
 
+---
+
 ## CORS og frontend-config
 
 Følgende felter kan sættes i din lokale, ignorerede `appsettings.Development.json`:
@@ -113,6 +224,8 @@ Du kan også lægge lokale dev-secrets der, hvis du bevidst vælger den model. D
 
 Disse bruges til trusted frontend-origin og Stripe redirects.
 
+---
+
 ## Rate limiting
 
 Følsomme endpoints er beskyttet med ASP.NET Cores indbyggede rate limiter.
@@ -128,11 +241,14 @@ Beskyttede endpoints:
 - `GET /api/stripe/checkout-status`
 
 Limits styres via `RateLimiting`-sektionen i config og kan sættes forskelligt i development og production.
+
 Webhook-endpointet er ikke rate limited, så Stripe ikke bliver blokeret af legitime retries.
+
+---
 
 ## Database med Docker Compose
 
-`docker-compose.yml` bruger nu environment variables i stedet for haardkodede passwords.
+`docker-compose.yml` bruger environment variables i stedet for hårdkodede passwords.
 
 1. Kopier `.env.example` til `.env`
 2. Sæt dine egne værdier
@@ -141,6 +257,8 @@ Webhook-endpointet er ikke rate limited, så Stripe ikke bliver blokeret af legi
 ```powershell
 docker compose up -d
 ```
+
+---
 
 ## Database og migrations
 
@@ -156,6 +274,16 @@ De fulde regler er dokumenteret i:
 docs/DATABASE_RULES.md
 ```
 
+Mental model:
+
+```text
+Migration = struktur
+Seeder/importer = data
+DBeaver = inspektion/backup, ikke schema-design
+```
+
+---
+
 ## Run
 
 ```powershell
@@ -168,9 +296,11 @@ Swagger er tilgængelig i development:
 /swagger
 ```
 
+---
+
 ## Startup validation
 
-Applikationen failer nu ved startup hvis kritisk config mangler eller er ugyldig for:
+Applikationen failer ved startup hvis kritisk config mangler eller er ugyldig for:
 
 - database connection string
 - JWT secret, issuer og audience
@@ -180,6 +310,8 @@ Applikationen failer nu ved startup hvis kritisk config mangler eller er ugyldig
 - trusted CORS origins
 - trusted frontend base URL
 
+---
+
 ## Tests
 
 Kør tests:
@@ -188,14 +320,34 @@ Kør tests:
 dotnet test .\BusPlanen.Tests\BusPlanen.Tests.csproj
 ```
 
+---
+
 ## Status
 
-Backenden er stadig under hardening frem mod deployment, men auth-, Stripe- og config-flow er blevet strammet op.
+Backenden er under hardening frem mod deployment.
+
+Nuværende status:
+
+- Auth flow er strammet op
+- Stripe flow virker
+- Booking flow er idempotent
+- Config validation er tilføjet
+- Rate limiting er tilføjet
+- Database-regler er dokumenteret
+- Progression map virker
+- Travel history virker
+- Badge system virker
+- Quest progression er computed-only v1
+
+---
 
 # English
+
 # BusPlanen Backend (API)
 
-Backend API for BusPlanen. Handles trips, bookings, users, and Stripe payments.
+Backend API for BusPlanen. Handles trips, bookings, users, Stripe payments, travel history, badges, and progression.
+
+---
 
 ## Features
 
@@ -203,9 +355,18 @@ Backend API for BusPlanen. Handles trips, bookings, users, and Stripe payments.
 - JWT authentication with roles
 - Stripe checkout and webhook integration
 - Seat reservation without overselling
+- Travel history
+- Badge system
+- Progression map
+- Territory progression
+- Municipality progression
+- Quest progression
+- GeoNames-based geo normalization
 - Global exception handling
 - Structured logging with Serilog
 - Correlation ID per request
+
+---
 
 ## Architecture
 
@@ -217,6 +378,29 @@ Controller -> Service -> Repository -> Database
 - Repositories handle database access
 - Controllers stay thin
 
+The feature structure roughly follows:
+
+```text
+BusRejser/
+  Features/
+    Auth/
+    Bookings/
+    Buses/
+    Rejser/
+    Payments/
+    Progression/
+    Badges/
+    TravelHistory/
+    Geo/
+    Facilities/
+
+  Common/
+    DTOs/
+    Security/
+```
+
+---
+
 ## Booking flow
 
 ```text
@@ -227,11 +411,85 @@ Frontend -> Stripe Checkout -> Webhook -> BookingService -> DB
 - The webhook flow is idempotent
 - Checkout status is read-only
 
+---
+
+## Progression and gamification
+
+The backend handles user travel progression through completed bookings.
+
+The flow is:
+
+```text
+Completed booking
+-> SyncUserProgress
+-> TravelHistory
+-> VisitedLocation
+-> Progression map
+-> Badges / Quests
+```
+
+Progression consists of:
+
+- `TravelHistory` for completed trips
+- `VisitedLocation` for aggregated location data
+- `ProgressionMapResponse` for the frontend map/dashboard
+- `TerritoryProgressResponse` for countries/territories
+- `MunicipalityProgressResponse` for municipalities
+- `QuestProgressResponse` for computed quests
+
+Quests are v1 computed-only:
+
+```text
+VisitedLocation + Territories + Municipalities
+-> QuestProgressService
+-> QuestProgressResponse
+```
+
+This means:
+
+- no quest database yet
+- no quest migrations yet
+- the backend owns quest progress
+- the frontend only renders quest data
+
+Geo normalization is used to translate destinations into country, region, municipality, and coordinates.
+
+---
+
+## Progression endpoints
+
+```text
+GET /api/Progression/map
+GET /api/Progression/quests
+```
+
+`/api/Progression/map` is used by the frontend progression dashboard and map.
+
+`/api/Progression/quests` returns the user’s computed quest progression.
+
+---
+
+## Badge flow
+
+Badges are evaluated backend-side as part of progression sync.
+
+```text
+SyncUserProgress
+-> BadgeEngine
+-> UserBadges
+```
+
+Badges are persistent data, while quests in v1 are computed data.
+
+---
+
 ## Requirements
 
 - .NET 8 SDK
 - MySQL 8
 - Stripe test keys
+
+---
 
 ## Local setup without committed secrets
 
@@ -291,6 +549,8 @@ $env:Email__Password="replace-with-email-password"
 $env:Email__From="noreply@example.com"
 ```
 
+---
+
 ## CORS and frontend config
 
 The following fields can be configured in your local ignored `appsettings.Development.json`:
@@ -306,6 +566,8 @@ The following fields can be configured in your local ignored `appsettings.Develo
 You may also store local development secrets there if you intentionally choose that model. The important part is that the file is not tracked in git.
 
 These values are used for trusted frontend origins and Stripe redirects.
+
+---
 
 ## Rate limiting
 
@@ -325,9 +587,11 @@ Limits are controlled through the `RateLimiting` config section and can differ b
 
 The webhook endpoint is not rate limited to avoid blocking legitimate Stripe retries.
 
+---
+
 ## Database with Docker Compose
 
-`docker-compose.yml` now uses environment variables instead of hardcoded passwords.
+`docker-compose.yml` uses environment variables instead of hardcoded passwords.
 
 1. Copy `.env.example` to `.env`
 2. Set your own values
@@ -336,6 +600,8 @@ The webhook endpoint is not rate limited to avoid blocking legitimate Stripe ret
 ```powershell
 docker compose up -d
 ```
+
+---
 
 ## Database and migrations
 
@@ -350,6 +616,17 @@ Full rules are documented in:
 ```text
 docs/DATABASE_RULES.md
 ```
+
+Mental model:
+
+```text
+Migration = structure
+Seeder/importer = data
+DBeaver = inspection/backup, not schema design
+```
+
+---
+
 ## Run
 
 ```powershell
@@ -362,9 +639,11 @@ Swagger is available in development:
 /swagger
 ```
 
+---
+
 ## Startup validation
 
-The application now fails during startup if critical configuration is missing or invalid for:
+The application fails during startup if critical configuration is missing or invalid for:
 
 - database connection string
 - JWT secret, issuer, and audience
@@ -374,6 +653,8 @@ The application now fails during startup if critical configuration is missing or
 - trusted CORS origins
 - trusted frontend base URL
 
+---
+
 ## Tests
 
 Run tests:
@@ -382,6 +663,23 @@ Run tests:
 dotnet test .\BusPlanen.Tests\BusPlanen.Tests.csproj
 ```
 
+---
+
 ## Status
 
-The backend is still being hardened towards deployment, but the auth, Stripe, and configuration flow have been tightened significantly.
+The backend is being hardened towards deployment.
+
+Current status:
+
+- Auth flow has been tightened
+- Stripe flow works
+- Booking flow is idempotent
+- Config validation has been added
+- Rate limiting has been added
+- Database rules are documented
+- Progression map works
+- Travel history works
+- Badge system works
+- Quest progression is computed-only v1
+
+---
