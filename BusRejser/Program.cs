@@ -297,6 +297,7 @@ builder.Services.AddScoped<GeoLookupService>();
 builder.Services.AddScoped<ProgressionMapBuilder>();
 builder.Services.AddScoped<ProgressionSyncService>();
 builder.Services.AddScoped<ProgressionTerritoryRepository>();
+builder.Services.AddScoped<ProgressionTerritoryAdminService>();
 
 var app = builder.Build();
 
