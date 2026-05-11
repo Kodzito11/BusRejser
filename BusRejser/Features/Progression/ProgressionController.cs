@@ -35,6 +35,13 @@ namespace BusRejser.Features.Progression
 			return Ok(new { message = "Progression opdateret." });
 		}
 
+		[HttpGet("quests")]
+		public ActionResult<List<QuestProgressResponse>> GetQuests()
+		{
+			var userId = GetUserId();
+			return Ok(_progressionService.GetQuests(userId));
+		}
+
 		private int GetUserId()
 		{
 			var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
