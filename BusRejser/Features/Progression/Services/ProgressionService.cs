@@ -14,6 +14,7 @@ namespace BusRejser.Features.Progression.Services
 		private readonly VisitedLocationRepository _visitedLocationRepository;
 		private readonly QuestProgressService _questProgressService;
 		private readonly ProgressionMapBuilder _progressionMapBuilder;
+		private readonly ProgressionSyncService _progressionSyncService;
 		private readonly BadgeEngine _badgeEngine;
 
 		public ProgressionService(
@@ -22,6 +23,8 @@ namespace BusRejser.Features.Progression.Services
 			TravelHistoryRepository travelHistoryRepository,
 			VisitedLocationRepository visitedLocationRepository,
 			QuestProgressService questProgressService,
+			ProgressionMapBuilder progressionMapBuilder,
+			ProgressionSyncService progressionSyncService,
 			BadgeEngine badgeEngine)
 		{
 			_bookingRepository = bookingRepository;
@@ -29,43 +32,14 @@ namespace BusRejser.Features.Progression.Services
 			_travelHistoryRepository = travelHistoryRepository;
 			_visitedLocationRepository = visitedLocationRepository;
 			_questProgressService = questProgressService;
-			_progressionMapBuilder = new ProgressionMapBuilder();
+			_progressionMapBuilder = progressionMapBuilder;
+			_progressionSyncService = progressionSyncService;
 			_badgeEngine = badgeEngine;
 		}
 
 		public void SyncUserProgress(int userId)
 		{
-			var completedBookings = _bookingRepository.GetCompletedPaidWithRejseByUserId(userId);
-
-			foreach (var booking in completedBookings)
-			{
-				if (_travelHistoryRepository.ExistsByBookingId(userId, booking.BookingId))
-					continue;
-
-				var rejse = booking.Rejse;
-				if (rejse == null)
-					continue;
-				var normalizedGeo = _geoNormalizationService.Normalize(rejse.Destination);
-				var history = new BusRejserLibrary.Models.TravelHistory
-				{
-					UserId = userId,
-					RejseId = rejse.RejseId,
-					BookingId = booking.BookingId,
-					CompletedAt = rejse.EndAt,
-
-					Destination = rejse.Destination,
-					Country = normalizedGeo.Country,
-					Region = normalizedGeo.Region,
-					Municipality = normalizedGeo.Municipality,
-					Latitude = normalizedGeo.Latitude,
-					Longitude = normalizedGeo.Longitude
-				};
-
-				_travelHistoryRepository.Create(history);
-				_visitedLocationRepository.UpsertFromTravelHistory(history);
-			}
-
-			_badgeEngine.EvaluateUserBadges(userId);
+			_progressionSyncService.SyncUserProgress(userId);
 		}
 
 		public ProgressionMapResponse GetMap(int userId)

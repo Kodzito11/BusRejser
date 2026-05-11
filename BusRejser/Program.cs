@@ -295,6 +295,7 @@ builder.Services.AddScoped<QuestProgressService>();
 builder.Services.AddScoped<BadgeEngine>();
 builder.Services.AddScoped<GeoLookupService>();
 builder.Services.AddScoped<ProgressionMapBuilder>();
+builder.Services.AddScoped<ProgressionSyncService>();
 
 var app = builder.Build();
 
