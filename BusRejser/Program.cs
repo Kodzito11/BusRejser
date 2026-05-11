@@ -294,6 +294,7 @@ builder.Services.AddScoped<TravelHistoryService>();
 builder.Services.AddScoped<QuestProgressService>();
 builder.Services.AddScoped<BadgeEngine>();
 builder.Services.AddScoped<GeoLookupService>();
+builder.Services.AddScoped<ProgressionMapBuilder>();
 
 var app = builder.Build();
 
