@@ -1,10 +1,18 @@
 ﻿using BusRejser.Features.Progression.DTOs;
 using BusRejserLibrary.Models;
+using BusRejserLibrary.Repositories;
 
 namespace BusRejser.Features.Progression.Services
 {
 	public class ProgressionMapBuilder
 	{
+		private readonly ProgressionTerritoryRepository _territoryRepository;
+
+		public ProgressionMapBuilder(ProgressionTerritoryRepository territoryRepository)
+		{
+			_territoryRepository = territoryRepository;
+		}
+
 		public ProgressionMapResponse Build(List<VisitedLocation> locations)
 		{
 			return new ProgressionMapResponse
@@ -26,68 +34,36 @@ namespace BusRejser.Features.Progression.Services
 
 		public List<TerritoryProgressResponse> BuildTerritories(List<VisitedLocation> locations)
 		{
-			var definitions = new[]
-			{
-				new
-				{
-					Key = "dk",
-					Name = "Danmark",
-					Type = "country",
-					Matches = new[] { "danmark", "denmark", "dk" }
-				},
-				new
-				{
-					Key = "germany",
-					Name = "Tyskland",
-					Type = "country",
-					Matches = new[] { "tyskland", "germany", "de" }
-				},
-				new
-				{
-					Key = "czechia",
-					Name = "Tjekkiet",
-					Type = "country",
-					Matches = new[] { "tjekkiet", "czechia", "czech republic", "cz" }
-				},
-				new
-				{
-					Key = "netherlands",
-					Name = "Holland",
-					Type = "country",
-					Matches = new[] { "holland", "netherlands", "nl" }
-				},
-				new
-				{
-					Key = "sweden",
-					Name = "Sverige",
-					Type = "country",
-					Matches = new[] { "sverige", "sweden", "se" }
-				},
-				new
-				{
-					Key = "norway",
-					Name = "Norge",
-					Type = "country",
-					Matches = new[] { "norge", "norway", "no" }
-				}
-			};
+			var territories = _territoryRepository.GetVisibleWithAliases();
 
-			return definitions.Select(def =>
+			return territories.Select(territory =>
 			{
-				var visitCount = locations
-					.Where(x =>
-						def.Matches.Contains(Normalize(x.Country)) ||
-						def.Matches.Contains(Normalize(x.Name)))
-					.Sum(x => x.VisitCount);
+				var aliases = territory.Aliases
+					.Select(x => Normalize(x.Value))
+					.Append(Normalize(territory.Key))
+					.Append(Normalize(territory.Name))
+					.Distinct()
+					.ToList();
+
+				var visitCount = territory.IsActive
+					? locations
+						.Where(x =>
+							aliases.Contains(Normalize(x.Country)) ||
+							aliases.Contains(Normalize(x.Name)))
+						.Sum(x => x.VisitCount)
+					: 0;
 
 				return new TerritoryProgressResponse
 				{
-					Key = def.Key,
-					Name = def.Name,
-					Type = def.Type,
+					Key = territory.Key,
+					Name = territory.Name,
+					Type = territory.Type,
 					VisitCount = visitCount,
-					Status = ResolveStatus(visitCount),
-					CompletionPercent = ResolveCompletionPercent(visitCount)
+					Status = ResolveTerritoryStatus(visitCount, territory),
+					CompletionPercent = ResolveTerritoryCompletionPercent(
+						visitCount,
+						territory.MasteryTarget
+					)
 				};
 			}).ToList();
 		}
@@ -112,8 +88,8 @@ namespace BusRejser.Features.Progression.Services
 						Name = g.Key.Municipality,
 						Region = g.Key.Region,
 						VisitCount = visitCount,
-						Status = ResolveStatus(visitCount),
-						CompletionPercent = ResolveCompletionPercent(visitCount)
+						Status = ResolveLocationStatus(visitCount),
+						CompletionPercent = ResolveLocationCompletionPercent(visitCount)
 					};
 				})
 				.OrderBy(x => x.Name)
@@ -170,7 +146,34 @@ namespace BusRejser.Features.Progression.Services
 				.ToLowerInvariant();
 		}
 
-		private static string ResolveStatus(int visitCount)
+		private static string ResolveTerritoryStatus(
+			int visitCount,
+			ProgressionTerritory territory)
+		{
+			if (!territory.IsActive || territory.IsComingSoon)
+				return "locked";
+
+			if (visitCount >= territory.MasteryTarget)
+				return "mastered";
+
+			if (visitCount >= 1)
+				return "unlocked";
+
+			return "locked";
+		}
+
+		private static int ResolveTerritoryCompletionPercent(
+			int visitCount,
+			int masteryTarget)
+		{
+			if (visitCount <= 0) return 0;
+			if (masteryTarget <= 0) return 0;
+			if (visitCount >= masteryTarget) return 100;
+
+			return (int)Math.Round((double)visitCount / masteryTarget * 100);
+		}
+
+		private static string ResolveLocationStatus(int visitCount)
 		{
 			if (visitCount >= 10) return "mastered";
 			if (visitCount >= 1) return "unlocked";
@@ -178,7 +181,7 @@ namespace BusRejser.Features.Progression.Services
 			return "locked";
 		}
 
-		private static int ResolveCompletionPercent(int visitCount)
+		private static int ResolveLocationCompletionPercent(int visitCount)
 		{
 			if (visitCount <= 0) return 0;
 			if (visitCount >= 10) return 100;

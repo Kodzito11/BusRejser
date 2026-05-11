@@ -29,6 +29,9 @@ namespace BusRejserLibrary.Models
 		public bool IsFeatured { get; set; }
 		public bool IsPublished { get; set; }
 
+		public int? ProgressionTerritoryId { get; set; }
+		public ProgressionTerritory? ProgressionTerritory { get; set; }
+
 		private Rejse(
 			string title,
 			string destination,

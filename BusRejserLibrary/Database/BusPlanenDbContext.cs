@@ -23,6 +23,8 @@ namespace BusRejserLibrary.Database
 		public DbSet<UserBadge> UserBadges => Set<UserBadge>();
 		public DbSet<GeoNamePlace> GeoNamePlaces => Set<GeoNamePlace>();
 		public DbSet<GeoAlternateName> GeoAlternateNames => Set<GeoAlternateName>();
+		public DbSet<ProgressionTerritory> ProgressionTerritories => Set<ProgressionTerritory>();
+		public DbSet<ProgressionTerritoryAlias> ProgressionTerritoryAliases => Set<ProgressionTerritoryAlias>();
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -43,11 +45,12 @@ namespace BusRejserLibrary.Database
 			modelBuilder.Entity<Facilitet>().ToTable("facilitet");
 			modelBuilder.Entity<PasswordResetToken>().ToTable("password_reset_tokens");
 			modelBuilder.Entity<RefreshToken>().ToTable("refresh_tokens");
-
 			modelBuilder.Entity<TravelHistory>().ToTable("travel_history");
 			modelBuilder.Entity<VisitedLocation>().ToTable("visited_locations");
 			modelBuilder.Entity<Badge>().ToTable("badges");
 			modelBuilder.Entity<UserBadge>().ToTable("user_badges");
+			modelBuilder.Entity<ProgressionTerritory>().ToTable("progression_territories");
+			modelBuilder.Entity<ProgressionTerritoryAlias>().ToTable("progression_territory_aliases");
 
 			modelBuilder.Entity<User>().HasKey(x => x.UserId);
 			modelBuilder.Entity<Rejse>().HasKey(x => x.RejseId);
@@ -59,6 +62,9 @@ namespace BusRejserLibrary.Database
 			modelBuilder.Entity<VisitedLocation>().HasKey(x => x.VisitedLocationId);
 			modelBuilder.Entity<Badge>().HasKey(x => x.BadgeId);
 			modelBuilder.Entity<UserBadge>().HasKey(x => x.UserBadgeId);
+			modelBuilder.Entity<ProgressionTerritory>().HasKey(x => x.ProgressionTerritoryId);
+			modelBuilder.Entity<ProgressionTerritoryAlias>().HasKey(x => x.ProgressionTerritoryAliasId);
+
 
 			modelBuilder.Entity<User>(entity =>
 			{
@@ -158,9 +164,16 @@ namespace BusRejserLibrary.Database
 					.OnDelete(DeleteBehavior.SetNull);
 			});
 
-			modelBuilder.Entity<Rejse>()
-				.Property(x => x.Version)
-				.IsConcurrencyToken();
+			modelBuilder.Entity<Rejse>(entity =>
+			{
+				entity.Property(x => x.Version)
+					.IsConcurrencyToken();
+
+				entity.HasOne(x => x.ProgressionTerritory)
+					.WithMany()
+					.HasForeignKey(x => x.ProgressionTerritoryId)
+					.OnDelete(DeleteBehavior.SetNull);
+			});
 
 			modelBuilder.Entity<Bus>()
 				.HasMany(x => x.Faciliteter)
@@ -355,6 +368,42 @@ namespace BusRejserLibrary.Database
 					.WithMany()
 					.HasForeignKey(x => x.GeoNameId)
 					.OnDelete(DeleteBehavior.Cascade);
+			});
+
+			modelBuilder.Entity<ProgressionTerritory>(entity =>
+			{
+				entity.Property(x => x.Key)
+					.IsRequired()
+					.HasMaxLength(80);
+
+				entity.Property(x => x.Name)
+					.IsRequired()
+					.HasMaxLength(120);
+
+				entity.Property(x => x.Type)
+					.IsRequired()
+					.HasMaxLength(50);
+
+				entity.Property(x => x.Description)
+					.HasMaxLength(500);
+
+				entity.HasIndex(x => x.Key)
+					.IsUnique();
+
+				entity.HasMany(x => x.Aliases)
+					.WithOne(x => x.Territory)
+					.HasForeignKey(x => x.ProgressionTerritoryId)
+					.OnDelete(DeleteBehavior.Cascade);
+			});
+
+			modelBuilder.Entity<ProgressionTerritoryAlias>(entity =>
+			{
+				entity.Property(x => x.Value)
+					.IsRequired()
+					.HasMaxLength(120);
+
+				entity.HasIndex(x => new { x.ProgressionTerritoryId, x.Value })
+					.IsUnique();
 			});
 
 		}

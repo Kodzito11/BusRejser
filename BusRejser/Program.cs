@@ -296,6 +296,7 @@ builder.Services.AddScoped<BadgeEngine>();
 builder.Services.AddScoped<GeoLookupService>();
 builder.Services.AddScoped<ProgressionMapBuilder>();
 builder.Services.AddScoped<ProgressionSyncService>();
+builder.Services.AddScoped<ProgressionTerritoryRepository>();
 
 var app = builder.Build();
 

@@ -13,10 +13,7 @@ public class QuestProgressService
 		var completedTrips = locations.Sum(x => x.VisitCount);
 		var visitedMunicipalities = municipalities.Count(x => x.VisitCount > 0);
 
-		var dk = territories.FirstOrDefault(x => x.Key == "dk");
-		var germany = territories.FirstOrDefault(x => x.Key == "germany");
-
-		return new List<QuestProgressResponse>
+		var quests = new List<QuestProgressResponse>
 		{
 			CreateQuest(
 				key: "first-trip",
@@ -37,24 +34,6 @@ public class QuestProgressService
 			),
 
 			CreateQuest(
-				key: "unlock-denmark",
-				title: "Unlock Danmark",
-				description: "Tag en rejse i Danmark.",
-				current: dk?.VisitCount ?? 0,
-				target: 1,
-				rewardLabel: "Danmark unlocked"
-			),
-
-			CreateQuest(
-				key: "unlock-germany",
-				title: "Unlock Tyskland",
-				description: "Tag din første rejse til Tyskland.",
-				current: germany?.VisitCount ?? 0,
-				target: 1,
-				rewardLabel: "Tyskland unlocked"
-			),
-
-			CreateQuest(
 				key: "visit-three-municipalities",
 				title: "Kommunesamler",
 				description: "Besøg 3 forskellige kommuner.",
@@ -72,6 +51,23 @@ public class QuestProgressService
 				rewardLabel: "Mastery reward"
 			)
 		};
+
+		foreach (var territory in territories)
+		{
+			if (territory.Status == "locked" && territory.VisitCount <= 0)
+			{
+				quests.Add(CreateQuest(
+					key: $"unlock-{territory.Key}",
+					title: $"Unlock {territory.Name}",
+					description: $"Tag din første rejse til {territory.Name}.",
+					current: territory.VisitCount,
+					target: 1,
+					rewardLabel: $"{territory.Name} unlocked"
+				));
+			}
+		}
+
+		return quests;
 	}
 
 	private static QuestProgressResponse CreateQuest(
