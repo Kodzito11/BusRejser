@@ -173,6 +173,7 @@ namespace BusRejserLibrary.Repositories
 			return _context.Bookings
 				.AsNoTracking()
 				.Include(x => x.Rejse)
+					.ThenInclude(x => x.ProgressionTerritory)
 				.Where(x =>
 					x.UserId == userId &&
 					x.Status == BookingStatus.Paid &&

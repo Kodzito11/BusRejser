@@ -38,8 +38,6 @@ namespace BusRejser.Features.Progression.Services
 			ValidateCreateRequest(request);
 
 			var existing = _territoryRepository.GetByKey(request.Key);
-			if (existing != null)
-				throw new ConflictException("Der findes allerede et progression territory med den key.");
 
 			var territory = new ProgressionTerritory
 			{
@@ -79,8 +77,6 @@ namespace BusRejser.Features.Progression.Services
 			ValidateUpdateRequest(request);
 
 			var existing = _territoryRepository.GetById(id);
-			if (existing == null)
-				throw new NotFoundException("Progression territory blev ikke fundet.");
 
 			var existingWithSameKey = _territoryRepository.GetByKey(request.Key);
 			if (existingWithSameKey != null &&

@@ -43,6 +43,8 @@ namespace BusRejser.Features.Progression.Services
 
 				var normalizedGeo = _geoNormalizationService.Normalize(rejse.Destination);
 
+				var country = rejse.ProgressionTerritory?.Key ?? normalizedGeo.Country;
+
 				var history = new TravelHistoryModel
 				{
 					UserId = userId,
@@ -51,7 +53,7 @@ namespace BusRejser.Features.Progression.Services
 					CompletedAt = rejse.EndAt,
 
 					Destination = rejse.Destination,
-					Country = normalizedGeo.Country,
+					Country = country,
 					Region = normalizedGeo.Region,
 					Municipality = normalizedGeo.Municipality,
 					Latitude = normalizedGeo.Latitude,

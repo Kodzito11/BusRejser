@@ -28,6 +28,7 @@ namespace BusRejserLibrary.Repositories
 		{
 			return _context.Rejser
 				.AsNoTracking()
+				.Include(x => x.ProgressionTerritory)
 				.FirstOrDefault(x => x.RejseId == id);
 		}
 
@@ -35,6 +36,7 @@ namespace BusRejserLibrary.Repositories
 		{
 			return _context.Rejser
 				.AsNoTracking()
+				.Include(x => x.ProgressionTerritory)
 				.OrderBy(x => x.StartAt)
 				.ToList();
 		}
@@ -77,6 +79,9 @@ namespace BusRejserLibrary.Repositories
 			existing.ImageUrl = rejse.ImageUrl;
 			existing.IsFeatured = rejse.IsFeatured;
 			existing.IsPublished = rejse.IsPublished;
+			existing.BusId = rejse.BusId;
+			existing.ProgressionTerritoryId = rejse.ProgressionTerritoryId;
+			existing.ShortDescription = rejse.ShortDescription;
 			existing.Version++;
 
 			_context.SaveChanges();
