@@ -298,8 +298,15 @@ builder.Services.AddScoped<ProgressionMapBuilder>();
 builder.Services.AddScoped<ProgressionSyncService>();
 builder.Services.AddScoped<ProgressionTerritoryRepository>();
 builder.Services.AddScoped<ProgressionTerritoryAdminService>();
+builder.Services.AddScoped<ProgressionTerritorySeeder>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+	var seeder = scope.ServiceProvider.GetRequiredService<ProgressionTerritorySeeder>();
+	await seeder.SeedAsync();
+}
 
 app.UseSerilogRequestLogging(options =>
 {
