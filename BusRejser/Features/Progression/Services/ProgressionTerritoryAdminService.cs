@@ -64,6 +64,13 @@ namespace BusRejser.Features.Progression.Services
 					.ToList()
 			};
 
+			var key = NormalizeKey(request.Key);
+
+			var existingTerritory = _territoryRepository.GetByKey(key);
+
+			if (existingTerritory != null)
+				throw new ConflictException("Der findes allerede et progression territory med den key.");
+
 			return _territoryRepository.Create(territory);
 		}
 
@@ -96,6 +103,19 @@ namespace BusRejser.Features.Progression.Services
 					? null
 					: request.Description.Trim()
 			};
+
+			var key = NormalizeKey(request.Key);
+
+			var territory = _territoryRepository.GetById(id);
+			if (territory == null)
+				throw new NotFoundException("Progression territory blev ikke fundet.");
+
+			var territoryWithSameKey = _territoryRepository.GetByKey(key);
+			if (territoryWithSameKey != null &&
+				territoryWithSameKey.ProgressionTerritoryId != id)
+			{
+				throw new ConflictException("Der findes allerede et progression territory med den key.");
+			}
 
 			_territoryRepository.Update(updated);
 		}
