@@ -74,14 +74,12 @@ namespace BusRejserLibrary.Repositories
 			existing.Price = rejse.Price;
 			existing.MaxSeats = rejse.MaxSeats;
 			existing.BusId = rejse.BusId;
+			existing.ProgressionTerritoryId = rejse.ProgressionTerritoryId;
 			existing.ShortDescription = rejse.ShortDescription;
 			existing.Description = rejse.Description;
 			existing.ImageUrl = rejse.ImageUrl;
 			existing.IsFeatured = rejse.IsFeatured;
 			existing.IsPublished = rejse.IsPublished;
-			existing.BusId = rejse.BusId;
-			existing.ProgressionTerritoryId = rejse.ProgressionTerritoryId;
-			existing.ShortDescription = rejse.ShortDescription;
 			existing.Version++;
 
 			_context.SaveChanges();

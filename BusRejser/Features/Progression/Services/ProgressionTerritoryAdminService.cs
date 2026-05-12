@@ -37,11 +37,15 @@ namespace BusRejser.Features.Progression.Services
 		{
 			ValidateCreateRequest(request);
 
-			var existing = _territoryRepository.GetByKey(request.Key);
+			var key = NormalizeKey(request.Key);
+
+			var existingTerritory = _territoryRepository.GetByKey(key);
+			if (existingTerritory != null)
+				throw new ConflictException("Der findes allerede et progression territory med den key.");
 
 			var territory = new ProgressionTerritory
 			{
-				Key = NormalizeKey(request.Key),
+				Key = key,
 				Name = request.Name.Trim(),
 				Type = NormalizeType(request.Type),
 				IsActive = request.IsActive,
@@ -62,43 +66,13 @@ namespace BusRejser.Features.Progression.Services
 					.ToList()
 			};
 
-			var key = NormalizeKey(request.Key);
-
-			var existingTerritory = _territoryRepository.GetByKey(key);
-
-			if (existingTerritory != null)
-				throw new ConflictException("Der findes allerede et progression territory med den key.");
-
 			return _territoryRepository.Create(territory);
 		}
+
 
 		public void Update(int id, UpdateProgressionTerritoryRequest request)
 		{
 			ValidateUpdateRequest(request);
-
-			var existing = _territoryRepository.GetById(id);
-
-			var existingWithSameKey = _territoryRepository.GetByKey(request.Key);
-			if (existingWithSameKey != null &&
-				existingWithSameKey.ProgressionTerritoryId != id)
-			{
-				throw new ConflictException("Der findes allerede et progression territory med den key.");
-			}
-
-			var updated = new ProgressionTerritory
-			{
-				ProgressionTerritoryId = id,
-				Key = NormalizeKey(request.Key),
-				Name = request.Name.Trim(),
-				Type = NormalizeType(request.Type),
-				IsActive = request.IsActive,
-				IsVisible = request.IsVisible,
-				IsComingSoon = request.IsComingSoon,
-				MasteryTarget = request.MasteryTarget,
-				Description = string.IsNullOrWhiteSpace(request.Description)
-					? null
-					: request.Description.Trim()
-			};
 
 			var key = NormalizeKey(request.Key);
 
@@ -112,6 +86,21 @@ namespace BusRejser.Features.Progression.Services
 			{
 				throw new ConflictException("Der findes allerede et progression territory med den key.");
 			}
+
+			var updated = new ProgressionTerritory
+			{
+				ProgressionTerritoryId = id,
+				Key = key,
+				Name = request.Name.Trim(),
+				Type = NormalizeType(request.Type),
+				IsActive = request.IsActive,
+				IsVisible = request.IsVisible,
+				IsComingSoon = request.IsComingSoon,
+				MasteryTarget = request.MasteryTarget,
+				Description = string.IsNullOrWhiteSpace(request.Description)
+					? null
+					: request.Description.Trim()
+			};
 
 			_territoryRepository.Update(updated);
 		}

@@ -18,6 +18,9 @@
 		public int MaxSeats { get; set; }
 		public int BookedSeats { get; set; }
 		public int? BusId { get; set; }
+		public int? ProgressionTerritoryId { get; set; }
+		public string? ProgressionTerritoryName { get; set; }
+		public string? ProgressionTerritoryKey { get; set; }
 
 		public string? ShortDescription { get; set; }
 		public string? Description { get; set; }

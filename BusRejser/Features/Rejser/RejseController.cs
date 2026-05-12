@@ -45,25 +45,27 @@ namespace BusRejser.Features.Rejser
 		public ActionResult<int> Create([FromBody] RejseCreateRequest request)
 		{
 			var rejse = Rejse.Create(
-			request.Title,
-			request.Destination,
-			request.Country,
-			request.City,
-			request.Region,
-			request.Municipality,
-			request.Latitude,
-			request.Longitude,
-			request.StartAt,
-			request.EndAt,
-			request.Price,
-			request.MaxSeats,
-			request.BusId,
-			request.ShortDescription,
-			request.Description,
-			request.ImageUrl,
-			request.IsFeatured,
-			request.IsPublished
-		);
+				request.Title,
+				request.Destination,
+				request.Country,
+				request.City,
+				request.Region,
+				request.Municipality,
+				request.Latitude,
+				request.Longitude,
+				request.StartAt,
+				request.EndAt,
+				request.Price,
+				request.MaxSeats,
+				request.BusId,
+				request.ShortDescription,
+				request.Description,
+				request.ImageUrl,
+				request.IsFeatured,
+				request.IsPublished
+			);
+
+			rejse.ProgressionTerritoryId = request.ProgressionTerritoryId;
 
 			var id = _service.Create(rejse);
 			return Ok(id);
@@ -101,6 +103,8 @@ namespace BusRejser.Features.Rejser
 				request.IsFeatured,
 				request.IsPublished
 			);
+
+			rejse.ProgressionTerritoryId = request.ProgressionTerritoryId;
 
 			_service.Update(id, rejse);
 			return Ok();
