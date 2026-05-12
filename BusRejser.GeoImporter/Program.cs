@@ -10,6 +10,10 @@ if (mode == "places")
 {
 	await ImportPlaces(connectionString, Path.Combine(basePath, "cities15000.txt"));
 }
+else if (mode == "dk")
+{
+	await ImportPlaces(connectionString, Path.Combine(basePath, "DK.txt"));
+}
 else if (mode == "alternate")
 {
 	await ImportAlternateNames(connectionString, Path.Combine(basePath, "alternateNamesV2.txt"));
@@ -18,6 +22,7 @@ else
 {
 	Console.WriteLine("Brug:");
 	Console.WriteLine(@"dotnet run --project .\BusRejser.GeoImporter -- places");
+	Console.WriteLine(@"dotnet run --project .\BusRejser.GeoImporter -- dk");
 	Console.WriteLine(@"dotnet run --project .\BusRejser.GeoImporter -- alternate");
 }
 
