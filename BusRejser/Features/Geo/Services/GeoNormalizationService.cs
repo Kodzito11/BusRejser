@@ -65,6 +65,36 @@ namespace BusRejser.Features.Geo.Services
 				?? geoPlace.Admin1Code
 				?? string.Empty;
 
+			if (geoPlace.CountryCode == "DK")
+			{
+				region = geoPlace.Admin1Code switch
+				{
+					"17" => "Region Hovedstaden",
+					"18" => "Region Midtjylland",
+					"19" => "Region Nordjylland",
+					"20" => "Region Sjælland",
+					"21" => "Region Syddanmark",
+					_ => region
+				};
+
+				if (!string.IsNullOrWhiteSpace(geoPlace.Admin1Code) &&
+					!string.IsNullOrWhiteSpace(geoPlace.Admin2Code))
+				{
+					var admin2Key = $"DK.{geoPlace.Admin1Code}.{geoPlace.Admin2Code}";
+
+					var admin2 = _context.GeoAdmin2Codes
+						.AsNoTracking()
+						.FirstOrDefault(x => x.Code == admin2Key);
+
+					if (admin2 != null)
+					{
+						municipality = admin2.Name
+							.Replace(" Kommune", "")
+							.Trim();
+					}
+				}
+			}
+
 			return new NormalizedGeoResult
 			{
 				Country = geoPlace.CountryCode == "DK" ? "Denmark" : geoPlace.CountryCode,

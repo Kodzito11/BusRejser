@@ -25,6 +25,8 @@ namespace BusRejserLibrary.Database
 		public DbSet<GeoAlternateName> GeoAlternateNames => Set<GeoAlternateName>();
 		public DbSet<ProgressionTerritory> ProgressionTerritories => Set<ProgressionTerritory>();
 		public DbSet<ProgressionTerritoryAlias> ProgressionTerritoryAliases => Set<ProgressionTerritoryAlias>();
+		public DbSet<GeoAdmin2Code> GeoAdmin2Codes => Set<GeoAdmin2Code>();
+
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -51,6 +53,7 @@ namespace BusRejserLibrary.Database
 			modelBuilder.Entity<UserBadge>().ToTable("user_badges");
 			modelBuilder.Entity<ProgressionTerritory>().ToTable("progression_territories");
 			modelBuilder.Entity<ProgressionTerritoryAlias>().ToTable("progression_territory_aliases");
+			modelBuilder.Entity<GeoAdmin2Code>().ToTable("geo_admin2_codes");
 
 			modelBuilder.Entity<User>().HasKey(x => x.UserId);
 			modelBuilder.Entity<Rejse>().HasKey(x => x.RejseId);
@@ -345,7 +348,11 @@ namespace BusRejserLibrary.Database
 				entity.Property(x => x.FeatureCode)
 					.HasColumnName("feature_code")
 					.HasMaxLength(10);
+				entity.Property(x => x.Admin2Code)
+					.HasColumnName("admin2_code")
+					.HasMaxLength(80);
 
+				entity.HasIndex(x => new { x.CountryCode, x.Admin1Code, x.Admin2Code });
 				entity.HasIndex(x => x.Name);
 				entity.HasIndex(x => x.AsciiName);
 				entity.HasIndex(x => x.CountryCode);
@@ -403,6 +410,25 @@ namespace BusRejserLibrary.Database
 					.HasMaxLength(120);
 
 				entity.HasIndex(x => new { x.ProgressionTerritoryId, x.Value })
+					.IsUnique();
+			});
+
+			modelBuilder.Entity<GeoAdmin2Code>(entity =>
+			{
+				entity.HasKey(x => x.Id);
+
+				entity.Property(x => x.Code)
+					.HasMaxLength(80)
+					.IsRequired();
+
+				entity.Property(x => x.Name)
+					.HasMaxLength(200)
+					.IsRequired();
+
+				entity.Property(x => x.AsciiName)
+					.HasMaxLength(200);
+
+				entity.HasIndex(x => x.Code)
 					.IsUnique();
 			});
 

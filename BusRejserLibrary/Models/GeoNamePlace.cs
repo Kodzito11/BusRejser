@@ -9,6 +9,7 @@
 
 		public string CountryCode { get; set; } = string.Empty;
 		public string? Admin1Code { get; set; }
+		public string? Admin2Code { get; set; }
 
 		public double? Latitude { get; set; }
 		public double? Longitude { get; set; }
@@ -17,5 +18,6 @@
 
 		public string? FeatureClass { get; set; }
 		public string? FeatureCode { get; set; }
+
 	}
 }
