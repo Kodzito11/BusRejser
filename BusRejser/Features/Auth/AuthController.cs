@@ -58,8 +58,7 @@ namespace BusRejser.Features.Auth
 
 			SetRefreshTokenCookie(response.RefreshToken, response.RefreshTokenExpiresAt);
 
-			response.RefreshToken = "";
-			return Ok(response);
+			return Ok(ToSessionResponse(response));
 		}
 
 		[HttpPost("logout")]
