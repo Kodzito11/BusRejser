@@ -110,10 +110,8 @@ namespace BusRejser.Features.Auth
 			var cookieOptions = new CookieOptions
 			{
 				HttpOnly = true,
-				Secure = !HttpContext.RequestServices
-					.GetRequiredService<IWebHostEnvironment>()
-					.IsDevelopment(),
-				SameSite = SameSiteMode.Lax,
+				Secure = true,
+				SameSite = SameSiteMode.None,
 				Expires = expiresAt,
 				Path = "/api/auth"
 			};
@@ -133,10 +131,8 @@ namespace BusRejser.Features.Auth
 			Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
 			{
 				HttpOnly = true,
-				Secure = !HttpContext.RequestServices
-					.GetRequiredService<IWebHostEnvironment>()
-					.IsDevelopment(),
-				SameSite = SameSiteMode.Lax,
+				Secure = true,
+				SameSite = SameSiteMode.None,
 				Path = "/api/auth"
 			});
 		}
