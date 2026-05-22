@@ -93,7 +93,7 @@ builder.Services.AddOptions<JwtOptions>()
 	.Validate(options => options.Secret.Trim().Length >= 32, "Jwt:Secret skal vaere mindst 32 tegn.")
 	.Validate(options => !string.IsNullOrWhiteSpace(options.Issuer), "Jwt:Issuer mangler.")
 	.Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "Jwt:Audience mangler.")
-	.Validate(options => options.AccessTokenLifetimeMinutes is >= 5 and <= 120, "Jwt:AccessTokenLifetimeMinutes skal vaere mellem 5 og 120.")
+	.Validate(options => options.AccessTokenLifetimeMinutes is >= 1 and <= 120, "Jwt:AccessTokenLifetimeMinutes skal vaere mellem 5 og 120.")
 	.ValidateOnStart();
 
 builder.Services.AddOptions<AuthOptions>()
@@ -146,7 +146,8 @@ builder.Services.AddCors(options =>
 	options.AddPolicy("frontend", policy =>
 		policy.WithOrigins(corsOptions.AllowedOrigins.ToArray())
 			.AllowAnyHeader()
-			.AllowAnyMethod());
+			.AllowAnyMethod()
+			.AllowCredentials());
 });
 
 builder.Services.AddRateLimiter(options =>
@@ -217,7 +218,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 			ValidIssuer = jwtOptions.Issuer,
 			ValidAudience = jwtOptions.Audience,
 			IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret)),
-			ClockSkew = TimeSpan.FromMinutes(1)
+			ClockSkew = TimeSpan.FromMinutes(0)
 		};
 
 		options.Events = new JwtBearerEvents
