@@ -31,19 +31,18 @@ namespace BusRejser.Features.Auth
 
 		[HttpPost("login")]
 		[EnableRateLimiting("auth-login")]
-		public ActionResult<AuthTokenResponse> Login([FromBody] LoginRequest request)
+		public ActionResult<AuthSessionResponse> Login([FromBody] LoginRequest request)
 		{
 			var response = _authService.Login(request.Email, request.Password);
 
 			SetRefreshTokenCookie(response.RefreshToken, response.RefreshTokenExpiresAt);
 
-			response.RefreshToken = "";
-			return Ok(response);
+			return Ok(ToSessionResponse(response));
 		}
 
 		[HttpPost("refresh")]
 		[EnableRateLimiting("auth-refresh")]
-		public ActionResult<AuthTokenResponse> Refresh()
+		public ActionResult<AuthSessionResponse> Refresh()
 		{
 			var refreshToken = GetRefreshTokenFromCookie();
 
@@ -101,6 +100,18 @@ namespace BusRejser.Features.Auth
 			{
 				Message = "Password opdateret."
 			});
+		}
+
+		private static AuthSessionResponse ToSessionResponse(AuthTokenResponse response)
+		{
+			return new AuthSessionResponse
+			{
+				TokenType = response.TokenType,
+				AccessToken = response.AccessToken,
+				AccessTokenExpiresAt = response.AccessTokenExpiresAt,
+				RefreshTokenExpiresAt = response.RefreshTokenExpiresAt,
+				User = response.User
+			};
 		}
 
 		private const string RefreshTokenCookieName = "busplanen_refresh";
