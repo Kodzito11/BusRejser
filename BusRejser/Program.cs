@@ -266,6 +266,7 @@ builder.Services.AddScoped<RejseRepository>();
 builder.Services.AddScoped<BookingRepository>();
 builder.Services.AddScoped<PasswordResetTokenRepository>();
 builder.Services.AddScoped<RefreshTokenRepository>();
+builder.Services.AddScoped<EmailVerificationTokenRepository>();
 builder.Services.AddScoped<TravelHistoryRepository>();
 builder.Services.AddScoped<UserBadgeRepository>();
 builder.Services.AddScoped<BadgeRepository>();

@@ -26,7 +26,7 @@ namespace BusRejserLibrary.Database
 		public DbSet<ProgressionTerritory> ProgressionTerritories => Set<ProgressionTerritory>();
 		public DbSet<ProgressionTerritoryAlias> ProgressionTerritoryAliases => Set<ProgressionTerritoryAlias>();
 		public DbSet<GeoAdmin2Code> GeoAdmin2Codes => Set<GeoAdmin2Code>();
-
+		public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -129,6 +129,27 @@ namespace BusRejserLibrary.Database
 				entity.HasOne<User>()
 					.WithMany()
 					.HasForeignKey(x => x.UserId)
+					.OnDelete(DeleteBehavior.Cascade);
+			});
+
+			modelBuilder.Entity<EmailVerificationToken>(entity =>
+			{
+				entity.ToTable("email_verification_tokens");
+
+				entity.HasKey(e => e.EmailVerificationTokenId);
+
+				entity.Property(e => e.TokenHash)
+					.IsRequired();
+
+				entity.Property(e => e.ExpiresAt)
+					.IsRequired();
+
+				entity.Property(e => e.CreatedAt)
+					.IsRequired();
+
+				entity.HasOne(e => e.User)
+					.WithMany()
+					.HasForeignKey(e => e.UserId)
 					.OnDelete(DeleteBehavior.Cascade);
 			});
 

@@ -101,6 +101,28 @@ namespace BusRejser.Features.Auth
 			});
 		}
 
+		[HttpPost("verify-email")]
+		public ActionResult<AuthMessageResponse> VerifyEmail([FromBody] VerifyEmailRequest request)
+		{
+			_authService.VerifyEmail(request.Token);
+
+			return Ok(new AuthMessageResponse
+			{
+				Message = "Email bekræftet."
+			});
+		}
+
+		[HttpPost("resend-verification-email")]
+		public ActionResult<AuthMessageResponse> ResendVerificationEmail([FromBody] ResendVerificationEmailRequest request)
+		{
+			_authService.ResendVerificationEmail(request.Email);
+
+			return Ok(new AuthMessageResponse
+			{
+				Message = "Hvis email findes og ikke er bekræftet, er nyt link sendt."
+			});
+		}
+
 		private static AuthSessionResponse ToSessionResponse(AuthTokenResponse response)
 		{
 			return new AuthSessionResponse

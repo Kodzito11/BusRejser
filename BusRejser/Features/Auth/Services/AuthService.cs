@@ -17,6 +17,7 @@ namespace BusRejser.Features.Auth.Services
 		private readonly JwtService _jwtService;
 		private readonly PasswordResetTokenRepository _passwordResetTokenRepository;
 		private readonly RefreshTokenRepository _refreshTokenRepository;
+		private readonly EmailVerificationTokenRepository _emailVerificationTokenRepository;
 		private readonly EmailService _emailService;
 		private readonly FrontendOptions _frontendOptions;
 		private readonly AuthOptions _authOptions;
@@ -27,6 +28,7 @@ namespace BusRejser.Features.Auth.Services
 			JwtService jwtService,
 			PasswordResetTokenRepository passwordResetTokenRepository,
 			RefreshTokenRepository refreshTokenRepository,
+			EmailVerificationTokenRepository emailVerificationTokenRepository,
 			EmailService emailService,
 			IOptions<FrontendOptions> frontendOptions,
 			IOptions<AuthOptions> authOptions)
@@ -35,6 +37,7 @@ namespace BusRejser.Features.Auth.Services
 			_passwordService = passwordService;
 			_jwtService = jwtService;
 			_passwordResetTokenRepository = passwordResetTokenRepository;
+			_emailVerificationTokenRepository = emailVerificationTokenRepository;
 			_refreshTokenRepository = refreshTokenRepository;
 			_emailService = emailService;
 			_frontendOptions = frontendOptions.Value;
@@ -72,7 +75,15 @@ namespace BusRejser.Features.Auth.Services
 				UpdatedAt = DateTime.UtcNow
 			};
 
-			return _userRepository.Create(user);
+			var userId = _userRepository.Create(user);
+
+			var createdUser = _userRepository.GetById(userId);
+			if (createdUser == null)
+				throw new ConflictException("Bruger kunne ikke oprettes korrekt.");
+
+			SendEmailVerification(createdUser);
+
+			return userId;
 		}
 
 		public AuthTokenResponse Login(string email, string password)
@@ -244,6 +255,49 @@ namespace BusRejser.Features.Auth.Services
 			};
 		}
 
+		public void VerifyEmail(string token)
+		{
+			if (string.IsNullOrWhiteSpace(token))
+				throw new ValidationException("Token kræves.");
+
+			var tokenHash = TokenHasher.Hash(token);
+
+			var verificationToken = _emailVerificationTokenRepository.GetActiveByHash(tokenHash);
+			if (verificationToken == null)
+				throw new NotFoundException("Ugyldigt eller brugt token.");
+
+			var user = _userRepository.GetById(verificationToken.UserId);
+			if (user == null)
+				throw new NotFoundException("Bruger ikke fundet.");
+
+			user.EmailConfirmed = true;
+			user.UpdatedAt = DateTime.UtcNow;
+
+			var updated = _userRepository.Update(user);
+			if (!updated)
+				throw new ConflictException("Email kunne ikke bekræftes.");
+
+			_emailVerificationTokenRepository.MarkAsUsed(
+				verificationToken.EmailVerificationTokenId);
+		}
+
+		public void ResendVerificationEmail(string email)
+		{
+			if (string.IsNullOrWhiteSpace(email))
+				return;
+
+			var normalizedEmail = email.Trim().ToLowerInvariant();
+			var user = _userRepository.GetByEmail(normalizedEmail);
+
+			if (user == null)
+				return;
+
+			if (user.EmailConfirmed)
+				return;
+
+			SendEmailVerification(user);
+		}
+
 		private void EnsureUserCanAuthenticate(User user)
 		{
 			if (user.Role == BusRejserLibrary.Enums.UserRole.None)
@@ -268,6 +322,34 @@ namespace BusRejser.Features.Auth.Services
 			}
 
 			return url;
+		}
+
+		private void SendEmailVerification(User user)
+		{
+			_emailVerificationTokenRepository.InvalidateAllForUser(user.UserId);
+
+			var rawToken = Guid.NewGuid().ToString();
+			var tokenHash = TokenHasher.Hash(rawToken);
+
+			var token = new EmailVerificationToken
+			{
+				UserId = user.UserId,
+				TokenHash = tokenHash,
+				ExpiresAt = DateTime.UtcNow.AddHours(24),
+				CreatedAt = DateTime.UtcNow
+			};
+
+			_emailVerificationTokenRepository.Create(token);
+
+			var verificationUrl = BuildFrontendUrl(
+				_frontendOptions.BaseUrl,
+				"/verify-email",
+				$"token={Uri.EscapeDataString(rawToken)}");
+
+			_emailService
+				.SendEmailVerificationAsync(user.Email, verificationUrl)
+				.GetAwaiter()
+				.GetResult();
 		}
 	}
 }

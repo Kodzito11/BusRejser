@@ -28,5 +28,26 @@
 
 			await _emailSender.SendAsync(message, cancellationToken);
 		}
+
+		public async Task SendEmailVerificationAsync(
+			string to,
+			string verificationUrl,
+			CancellationToken cancellationToken = default)
+		{
+			var message = new EmailMessage
+			{
+				To = to,
+				Subject = "Bekræft din email",
+				TextBody = $"Aabn dette link for at bekraefte din email: {verificationUrl}",
+				HtmlBody = $"""
+					<p>Tak fordi du oprettede en konto hos BusPlanen.</p>
+					<p>Bekræft din email ved at trykke på linket her:</p>
+					<p><a href="{verificationUrl}">Bekræft email</a></p>
+					<p>Hvis du ikke har oprettet en konto, kan du ignorere denne mail.</p>
+					"""
+			};
+
+			await _emailSender.SendAsync(message, cancellationToken);
+		}
 	}
 }
