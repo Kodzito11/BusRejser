@@ -6,6 +6,7 @@ using BusRejser.Options;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
 using Microsoft.Extensions.Options;
+using BusRejser.Common.Email;
 
 namespace BusRejser.Features.Auth.Services
 {
@@ -175,11 +176,7 @@ namespace BusRejser.Features.Auth.Services
 				_frontendOptions.PasswordResetPath,
 				$"token={Uri.EscapeDataString(rawToken)}");
 
-			await _emailService.SendAsync(
-				user.Email,
-				"Nulstil password",
-				$"Aabn dette link for at nulstille dit password: {resetUrl}"
-			);
+			await _emailService.SendPasswordResetAsync(user.Email, resetUrl);
 		}
 
 		public void ResetPassword(string token, string newPassword)

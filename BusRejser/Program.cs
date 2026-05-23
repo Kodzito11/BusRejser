@@ -25,6 +25,8 @@ using Serilog;
 using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
+using BusRejser.Common.Email;
+using BusRejser.Common.Email.Providers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -109,11 +111,9 @@ builder.Services.AddOptions<StripeOptions>()
 
 builder.Services.AddOptions<EmailOptions>()
 	.Bind(builder.Configuration.GetSection(EmailOptions.SectionName))
-	.Validate(options => !string.IsNullOrWhiteSpace(options.Host), "Email:Host mangler.")
-	.Validate(options => options.Port is > 0 and <= 65535, "Email:Port skal vaere mellem 1 og 65535.")
-	.Validate(options => !string.IsNullOrWhiteSpace(options.Username), "Email:Username mangler.")
-	.Validate(options => !string.IsNullOrWhiteSpace(options.Password), "Email:Password mangler.")
+	.Validate(options => !string.IsNullOrWhiteSpace(options.Provider), "Email:Provider mangler.")
 	.Validate(options => !string.IsNullOrWhiteSpace(options.From), "Email:From mangler.")
+	.Validate(options => !string.IsNullOrWhiteSpace(options.ApiKey), "Email:ApiKey mangler.")
 	.ValidateOnStart();
 
 builder.Services.AddOptions<CorsOptions>()
@@ -288,6 +288,7 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<StripeService>();
+builder.Services.AddHttpClient<IEmailSender, ResendEmailSender>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<BadgeService>();
