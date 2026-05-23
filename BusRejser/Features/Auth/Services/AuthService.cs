@@ -44,7 +44,7 @@ namespace BusRejser.Features.Auth.Services
 			_authOptions = authOptions.Value;
 		}
 
-		public int Register(string FirstName, string LastName, string email, string password)
+		public async Task<int> Register(string FirstName, string LastName, string email, string password)
 		{
 			if (string.IsNullOrWhiteSpace(FirstName))
 				throw new ValidationException("Fornavn kræves");
@@ -81,7 +81,7 @@ namespace BusRejser.Features.Auth.Services
 			if (createdUser == null)
 				throw new ConflictException("Bruger kunne ikke oprettes korrekt.");
 
-			SendEmailVerification(createdUser);
+			await SendEmailVerificationAsync(createdUser);
 
 			return userId;
 		}
@@ -281,7 +281,7 @@ namespace BusRejser.Features.Auth.Services
 				verificationToken.EmailVerificationTokenId);
 		}
 
-		public void ResendVerificationEmail(string email)
+		public async Task ResendVerificationEmail(string email)
 		{
 			if (string.IsNullOrWhiteSpace(email))
 				return;
@@ -295,7 +295,7 @@ namespace BusRejser.Features.Auth.Services
 			if (user.EmailConfirmed)
 				return;
 
-			SendEmailVerification(user);
+			await SendEmailVerificationAsync(user);
 		}
 
 		private void EnsureUserCanAuthenticate(User user)
@@ -324,7 +324,7 @@ namespace BusRejser.Features.Auth.Services
 			return url;
 		}
 
-		private void SendEmailVerification(User user)
+		private async Task SendEmailVerificationAsync(User user)
 		{
 			_emailVerificationTokenRepository.InvalidateAllForUser(user.UserId);
 
@@ -346,10 +346,7 @@ namespace BusRejser.Features.Auth.Services
 				"/verify-email",
 				$"token={Uri.EscapeDataString(rawToken)}");
 
-			_emailService
-				.SendEmailVerificationAsync(user.Email, verificationUrl)
-				.GetAwaiter()
-				.GetResult();
+			await _emailService.SendEmailVerificationAsync(user.Email, verificationUrl);
 		}
 	}
 }

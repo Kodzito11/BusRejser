@@ -11,5 +11,7 @@ namespace BusRejser.Options
 		public RateLimitPolicyOptions RefreshToken { get; set; } = new();
 		public RateLimitPolicyOptions CheckoutCreate { get; set; } = new();
 		public RateLimitPolicyOptions CheckoutStatus { get; set; } = new();
+		public RateLimitPolicyOptions VerifyEmail { get; set; } = new();
+		public RateLimitPolicyOptions ResendVerificationEmail { get; set; } = new();
 	}
 }

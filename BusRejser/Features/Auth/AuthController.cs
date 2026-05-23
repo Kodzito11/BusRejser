@@ -18,9 +18,9 @@ namespace BusRejser.Features.Auth
 
 		[HttpPost("register")]
 		[EnableRateLimiting("auth-register")]
-		public ActionResult<RegisterResponse> Register([FromBody] RegisterRequest request)
+		public async Task<ActionResult<RegisterResponse>> Register([FromBody] RegisterRequest request)
 		{
-			var userId = _authService.Register(request.FirstName, request.LastName, request.Email, request.Password);
+			var userId = await _authService.Register(request.FirstName, request.LastName, request.Email, request.Password);
 
 			return Ok(new RegisterResponse
 			{
@@ -102,6 +102,7 @@ namespace BusRejser.Features.Auth
 		}
 
 		[HttpPost("verify-email")]
+		[EnableRateLimiting("auth-verify-email")]
 		public ActionResult<AuthMessageResponse> VerifyEmail([FromBody] VerifyEmailRequest request)
 		{
 			_authService.VerifyEmail(request.Token);
@@ -113,9 +114,10 @@ namespace BusRejser.Features.Auth
 		}
 
 		[HttpPost("resend-verification-email")]
-		public ActionResult<AuthMessageResponse> ResendVerificationEmail([FromBody] ResendVerificationEmailRequest request)
+		[EnableRateLimiting("auth-resend-verification-email")]
+		public async Task<ActionResult<AuthMessageResponse>> ResendVerificationEmail([FromBody] ResendVerificationEmailRequest request)
 		{
-			_authService.ResendVerificationEmail(request.Email);
+			await _authService.ResendVerificationEmail(request.Email);
 
 			return Ok(new AuthMessageResponse
 			{

@@ -139,6 +139,8 @@ builder.Services.AddOptions<RateLimitingOptions>()
 	.Validate(options => IsValidRateLimitPolicy(options.RefreshToken), "RateLimiting:RefreshToken er ugyldig.")
 	.Validate(options => IsValidRateLimitPolicy(options.CheckoutCreate), "RateLimiting:CheckoutCreate er ugyldig.")
 	.Validate(options => IsValidRateLimitPolicy(options.CheckoutStatus), "RateLimiting:CheckoutStatus er ugyldig.")
+	.Validate(options => IsValidRateLimitPolicy(options.VerifyEmail), "RateLimiting:VerifyEmail er ugyldig.")
+	.Validate(options => IsValidRateLimitPolicy(options.ResendVerificationEmail), "RateLimiting:ResendVerificationEmail er ugyldig.")
 	.ValidateOnStart();
 
 builder.Services.AddCors(options =>
@@ -194,6 +196,16 @@ builder.Services.AddRateLimiter(options =>
 		context,
 		rateLimitingOptions.RefreshToken,
 		"auth-refresh"));
+	
+	options.AddPolicy("auth-verify-email", context => CreatePerClientLimiter(
+	context,
+	rateLimitingOptions.VerifyEmail,
+	"auth-verify-email"));
+
+	options.AddPolicy("auth-resend-verification-email", context => CreatePerClientLimiter(
+		context,
+		rateLimitingOptions.ResendVerificationEmail,
+		"auth-resend-verification-email"));
 
 	options.AddPolicy("payment-checkout-create", context => CreatePerClientLimiter(
 		context,
