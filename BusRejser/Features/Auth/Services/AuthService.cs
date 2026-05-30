@@ -1,12 +1,14 @@
 using BusRejser.Common.DTOs;
+using BusRejser.Common.Email;
+using BusRejser.Common.Logging;
 using BusRejser.Common.Security;
 using BusRejser.Exceptions;
 using BusRejser.Features.Auth.DTOs;
 using BusRejser.Options;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using BusRejser.Common.Email;
 
 namespace BusRejser.Features.Auth.Services
 {
@@ -19,6 +21,7 @@ namespace BusRejser.Features.Auth.Services
 		private readonly RefreshTokenRepository _refreshTokenRepository;
 		private readonly EmailVerificationTokenRepository _emailVerificationTokenRepository;
 		private readonly EmailService _emailService;
+		private readonly ILogger<AuthService> _logger;
 		private readonly FrontendOptions _frontendOptions;
 		private readonly AuthOptions _authOptions;
 
@@ -30,6 +33,7 @@ namespace BusRejser.Features.Auth.Services
 			RefreshTokenRepository refreshTokenRepository,
 			EmailVerificationTokenRepository emailVerificationTokenRepository,
 			EmailService emailService,
+			ILogger<AuthService> logger,
 			IOptions<FrontendOptions> frontendOptions,
 			IOptions<AuthOptions> authOptions)
 		{
@@ -40,12 +44,15 @@ namespace BusRejser.Features.Auth.Services
 			_emailVerificationTokenRepository = emailVerificationTokenRepository;
 			_refreshTokenRepository = refreshTokenRepository;
 			_emailService = emailService;
+			_logger = logger;
 			_frontendOptions = frontendOptions.Value;
 			_authOptions = authOptions.Value;
 		}
 
 		public async Task<int> Register(string FirstName, string LastName, string email, string password)
 		{
+			_logger.LogInformation("{EventName}", AuthLogEvents.RegisterAttempt);
+
 			if (string.IsNullOrWhiteSpace(FirstName))
 				throw new ValidationException("Fornavn kræves");
 			if (string.IsNullOrWhiteSpace(LastName))
@@ -60,12 +67,15 @@ namespace BusRejser.Features.Auth.Services
 
 			var existingEmail = _userRepository.GetByEmail(email);
 			if (existingEmail != null)
+			{
+				_logger.LogWarning("{EventName} Reason={Reason}", AuthLogEvents.RegisterFailed, "EmailAlreadyExists");
 				throw new ConflictException("Email findes allerede.");
+			}
 
 			var passwordHash = _passwordService.HashPassword(password);
 
 			var user = new User
-			{	
+			{
 				FirstName = FirstName.Trim(),
 				LastName = LastName.Trim(),
 				Email = email,
@@ -79,27 +89,52 @@ namespace BusRejser.Features.Auth.Services
 
 			var createdUser = _userRepository.GetById(userId);
 			if (createdUser == null)
+			{
+				_logger.LogWarning("{EventName} Reason={Reason} UserId={UserId}", AuthLogEvents.RegisterFailed, "CreatedUserNotFound", userId);
 				throw new ConflictException("Bruger kunne ikke oprettes korrekt.");
+			}
 
 			await SendEmailVerificationAsync(createdUser);
+
+			_logger.LogInformation(
+				"{EventName} UserId={UserId} Role={Role}",
+				AuthLogEvents.RegisterSuccess,
+				createdUser.UserId,
+				createdUser.Role);
 
 			return userId;
 		}
 
 		public AuthTokenResponse Login(string email, string password)
 		{
+			_logger.LogInformation("{EventName}", AuthLogEvents.LoginAttempt);
+
 			if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+			{
+				_logger.LogWarning("{EventName} Reason={Reason}", AuthLogEvents.LoginFailed, "MissingCredentials");
 				throw new UnauthorizedException("Forkert email eller password.");
+			}
 
 			email = email.Trim().ToLowerInvariant();
 
 			var user = _userRepository.GetByEmail(email);
 			if (user == null)
+			{
+				_logger.LogWarning("{EventName} Reason={Reason}", AuthLogEvents.LoginFailed, "UserNotFound");
 				throw new UnauthorizedException("Forkert email eller password.");
+			}
 
 			var isValid = _passwordService.VerifyPassword(password, user.PasswordHash);
 			if (!isValid)
+			{
+				_logger.LogWarning(
+					"{EventName} Reason={Reason} UserId={UserId}",
+					AuthLogEvents.LoginFailed,
+					"InvalidPassword",
+					user.UserId);
+
 				throw new UnauthorizedException("Forkert email eller password.");
+			}
 
 			EnsureUserCanAuthenticate(user);
 
@@ -108,52 +143,40 @@ namespace BusRejser.Features.Auth.Services
 			if (!updated)
 				throw new ConflictException("Bruger kunne ikke opdateres.");
 
+			_logger.LogInformation(
+				"{EventName} UserId={UserId} Role={Role}",
+				AuthLogEvents.LoginSuccess,
+				user.UserId,
+				user.Role);
+
 			return IssueSession(user);
-		}
-
-		public AuthTokenResponse Refresh(string refreshToken)
-		{
-			if (string.IsNullOrWhiteSpace(refreshToken))
-				throw new UnauthorizedException("Refresh token mangler.");
-
-			var refreshTokenHash = TokenHasher.Hash(refreshToken);
-			var existingToken = _refreshTokenRepository.GetByTokenHash(refreshTokenHash);
-
-			if (existingToken == null || !existingToken.IsActive)
-				throw new UnauthorizedException("Refresh token er ugyldig eller udløbet.");
-
-			var user = _userRepository.GetById(existingToken.UserId);
-			if (user == null)
-				throw new UnauthorizedException("Sessionen er ikke længere gyldig.");
-
-			EnsureUserCanAuthenticate(user);
-
-			var rawNewRefreshToken = _jwtService.GenerateRefreshToken();
-			var newRefreshTokenHash = TokenHasher.Hash(rawNewRefreshToken);
-			var newRefreshToken = new RefreshToken
-			{
-				UserId = user.UserId,
-				TokenHash = newRefreshTokenHash,
-				CreatedAt = DateTime.UtcNow,
-				ExpiresAt = DateTime.UtcNow.AddDays(_authOptions.RefreshTokenLifetimeDays)
-			};
-
-			_refreshTokenRepository.Rotate(existingToken, newRefreshToken);
-
-			return BuildAuthTokenResponse(user, rawNewRefreshToken, newRefreshToken.ExpiresAt);
 		}
 
 		public void Logout(string refreshToken)
 		{
+			_logger.LogInformation("{EventName}", AuthLogEvents.LogoutAttempt);
+
 			if (string.IsNullOrWhiteSpace(refreshToken))
+			{
+				_logger.LogInformation("{EventName} Reason={Reason}", AuthLogEvents.LogoutSkipped, "MissingRefreshToken");
 				return;
+			}
 
 			var refreshTokenHash = TokenHasher.Hash(refreshToken);
 			var existingToken = _refreshTokenRepository.GetByTokenHash(refreshTokenHash);
+
 			if (existingToken == null || existingToken.RevokedAt != null)
+			{
+				_logger.LogInformation("{EventName} Reason={Reason}", AuthLogEvents.LogoutSkipped, "TokenNotFoundOrAlreadyRevoked");
 				return;
+			}
 
 			_refreshTokenRepository.Revoke(existingToken);
+
+			_logger.LogInformation(
+				"{EventName} UserId={UserId}",
+				AuthLogEvents.LogoutSuccess,
+				existingToken.UserId);
 		}
 
 		public async Task ForgotPassword(string email)
@@ -253,6 +276,60 @@ namespace BusRejser.Features.Auth.Services
 					Role = user.Role.ToString()
 				}
 			};
+		}
+
+		public AuthTokenResponse Refresh(string refreshToken)
+		{
+			_logger.LogInformation("{EventName}", AuthLogEvents.RefreshAttempt);
+
+			if (string.IsNullOrWhiteSpace(refreshToken))
+			{
+				_logger.LogWarning("{EventName} Reason={Reason}", AuthLogEvents.RefreshFailed, "MissingRefreshToken");
+				throw new UnauthorizedException("Refresh token mangler.");
+			}
+
+			var refreshTokenHash = TokenHasher.Hash(refreshToken);
+			var existingToken = _refreshTokenRepository.GetByTokenHash(refreshTokenHash);
+
+			if (existingToken == null || !existingToken.IsActive)
+			{
+				_logger.LogWarning("{EventName} Reason={Reason}", AuthLogEvents.RefreshFailed, "InvalidOrExpiredToken");
+				throw new UnauthorizedException("Refresh token er ugyldig eller udløbet.");
+			}
+
+			var user = _userRepository.GetById(existingToken.UserId);
+			if (user == null)
+			{
+				_logger.LogWarning(
+					"{EventName} Reason={Reason} UserId={UserId}",
+					AuthLogEvents.RefreshFailed,
+					"UserNotFound",
+					existingToken.UserId);
+
+				throw new UnauthorizedException("Sessionen er ikke længere gyldig.");
+			}
+
+			EnsureUserCanAuthenticate(user);
+
+			var rawNewRefreshToken = _jwtService.GenerateRefreshToken();
+			var newRefreshTokenHash = TokenHasher.Hash(rawNewRefreshToken);
+			var newRefreshToken = new RefreshToken
+			{
+				UserId = user.UserId,
+				TokenHash = newRefreshTokenHash,
+				CreatedAt = DateTime.UtcNow,
+				ExpiresAt = DateTime.UtcNow.AddDays(_authOptions.RefreshTokenLifetimeDays)
+			};
+
+			_refreshTokenRepository.Rotate(existingToken, newRefreshToken);
+
+			_logger.LogInformation(
+				"{EventName} UserId={UserId} Role={Role}",
+				AuthLogEvents.RefreshSuccess,
+				user.UserId,
+				user.Role);
+
+			return BuildAuthTokenResponse(user, rawNewRefreshToken, newRefreshToken.ExpiresAt);
 		}
 
 		public void VerifyEmail(string token)

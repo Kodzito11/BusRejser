@@ -1,3 +1,4 @@
+using BusRejser.Common.Logging;
 using BusRejser.Features.Auth.DTOs;
 using BusRejser.Features.Auth.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -10,17 +11,36 @@ namespace BusRejser.Features.Auth
 	public class AuthController : ControllerBase
 	{
 		private readonly AuthService _authService;
+		private readonly ILogger<AuthController> _logger;
 
-		public AuthController(AuthService authService)
+		public AuthController(
+			AuthService authService,
+			ILogger<AuthController> logger)
 		{
 			_authService = authService;
+			_logger = logger;
 		}
 
 		[HttpPost("register")]
 		[EnableRateLimiting("auth-register")]
 		public async Task<ActionResult<RegisterResponse>> Register([FromBody] RegisterRequest request)
 		{
-			var userId = await _authService.Register(request.FirstName, request.LastName, request.Email, request.Password);
+			_logger.LogInformation(
+				"{EventName} Endpoint={Endpoint}",
+				AuthLogEvents.RegisterAttempt,
+				"POST /api/auth/register");
+
+			var userId = await _authService.Register(
+				request.FirstName,
+				request.LastName,
+				request.Email,
+				request.Password);
+
+			_logger.LogInformation(
+				"{EventName} Endpoint={Endpoint} UserId={UserId}",
+				AuthLogEvents.RegisterSuccess,
+				"POST /api/auth/register",
+				userId);
 
 			return Ok(new RegisterResponse
 			{
@@ -33,9 +53,22 @@ namespace BusRejser.Features.Auth
 		[EnableRateLimiting("auth-login")]
 		public ActionResult<AuthSessionResponse> Login([FromBody] LoginRequest request)
 		{
+			_logger.LogInformation(
+				"{EventName} Endpoint={Endpoint}",
+				AuthLogEvents.LoginAttempt,
+				"POST /api/auth/login");
+
 			var response = _authService.Login(request.Email, request.Password);
 
 			SetRefreshTokenCookie(response.RefreshToken, response.RefreshTokenExpiresAt);
+
+			_logger.LogInformation(
+				"{EventName} Endpoint={Endpoint} UserId={UserId} Role={Role} CookieSet={CookieSet}",
+				AuthLogEvents.LoginSuccess,
+				"POST /api/auth/login",
+				response.User.UserId,
+				response.User.Role,
+				true);
 
 			return Ok(ToSessionResponse(response));
 		}
@@ -44,10 +77,24 @@ namespace BusRejser.Features.Auth
 		[EnableRateLimiting("auth-refresh")]
 		public ActionResult<AuthSessionResponse> Refresh()
 		{
+			var hasRefreshCookie = Request.Cookies.ContainsKey(RefreshTokenCookieName);
+
+			_logger.LogInformation(
+				"{EventName} Endpoint={Endpoint} HasRefreshCookie={HasRefreshCookie}",
+				AuthLogEvents.RefreshAttempt,
+				"POST /api/auth/refresh",
+				hasRefreshCookie);
+
 			var refreshToken = GetRefreshTokenFromCookie();
 
 			if (string.IsNullOrWhiteSpace(refreshToken))
 			{
+				_logger.LogWarning(
+					"{EventName} Endpoint={Endpoint} Reason={Reason}",
+					AuthLogEvents.RefreshFailed,
+					"POST /api/auth/refresh",
+					"MissingRefreshCookie");
+
 				return Unauthorized(new AuthMessageResponse
 				{
 					Message = "Refresh token mangler."
@@ -58,20 +105,50 @@ namespace BusRejser.Features.Auth
 
 			SetRefreshTokenCookie(response.RefreshToken, response.RefreshTokenExpiresAt);
 
+			_logger.LogInformation(
+				"{EventName} Endpoint={Endpoint} UserId={UserId} Role={Role} CookieRotated={CookieRotated}",
+				AuthLogEvents.RefreshSuccess,
+				"POST /api/auth/refresh",
+				response.User.UserId,
+				response.User.Role,
+				true);
+
 			return Ok(ToSessionResponse(response));
 		}
 
 		[HttpPost("logout")]
 		public ActionResult<AuthMessageResponse> Logout()
 		{
+			var hasRefreshCookie = Request.Cookies.ContainsKey(RefreshTokenCookieName);
+
+			_logger.LogInformation(
+				"{EventName} Endpoint={Endpoint} HasRefreshCookie={HasRefreshCookie}",
+				AuthLogEvents.LogoutAttempt,
+				"POST /api/auth/logout",
+				hasRefreshCookie);
+
 			var refreshToken = GetRefreshTokenFromCookie();
 
 			if (!string.IsNullOrWhiteSpace(refreshToken))
 			{
 				_authService.Logout(refreshToken);
 			}
+			else
+			{
+				_logger.LogInformation(
+					"{EventName} Endpoint={Endpoint} Reason={Reason}",
+					AuthLogEvents.LogoutSkipped,
+					"POST /api/auth/logout",
+					"MissingRefreshCookie");
+			}
 
 			DeleteRefreshTokenCookie();
+
+			_logger.LogInformation(
+				"{EventName} Endpoint={Endpoint} CookieCleared={CookieCleared}",
+				AuthLogEvents.LogoutSuccess,
+				"POST /api/auth/logout",
+				true);
 
 			return Ok(new AuthMessageResponse
 			{
@@ -83,7 +160,13 @@ namespace BusRejser.Features.Auth
 		[EnableRateLimiting("auth-forgot-password")]
 		public async Task<ActionResult<AuthMessageResponse>> ForgotPassword([FromBody] ForgotPasswordRequest request)
 		{
+			_logger.LogInformation(
+				"{EventName} Endpoint={Endpoint}",
+				AuthLogEvents.PasswordResetRequested,
+				"POST /api/auth/forgot-password");
+
 			await _authService.ForgotPassword(request.Email);
+
 			return Ok(new AuthMessageResponse
 			{
 				Message = "Hvis email findes, er link sendt."
@@ -95,6 +178,12 @@ namespace BusRejser.Features.Auth
 		public ActionResult<AuthMessageResponse> ResetPassword([FromBody] ResetPasswordRequest request)
 		{
 			_authService.ResetPassword(request.Token, request.NewPassword);
+
+			_logger.LogInformation(
+				"{EventName} Endpoint={Endpoint}",
+				AuthLogEvents.PasswordResetSuccess,
+				"POST /api/auth/reset-password");
+
 			return Ok(new AuthMessageResponse
 			{
 				Message = "Password opdateret."
@@ -107,6 +196,11 @@ namespace BusRejser.Features.Auth
 		{
 			_authService.VerifyEmail(request.Token);
 
+			_logger.LogInformation(
+				"{EventName} Endpoint={Endpoint}",
+				AuthLogEvents.EmailVerificationSuccess,
+				"POST /api/auth/verify-email");
+
 			return Ok(new AuthMessageResponse
 			{
 				Message = "Email bekræftet."
@@ -118,6 +212,11 @@ namespace BusRejser.Features.Auth
 		public async Task<ActionResult<AuthMessageResponse>> ResendVerificationEmail([FromBody] ResendVerificationEmailRequest request)
 		{
 			await _authService.ResendVerificationEmail(request.Email);
+
+			_logger.LogInformation(
+				"{EventName} Endpoint={Endpoint}",
+				AuthLogEvents.VerificationEmailResent,
+				"POST /api/auth/resend-verification-email");
 
 			return Ok(new AuthMessageResponse
 			{
@@ -151,6 +250,14 @@ namespace BusRejser.Features.Auth
 			};
 
 			Response.Cookies.Append(RefreshTokenCookieName, refreshToken, cookieOptions);
+
+			_logger.LogInformation(
+				"AUTH_REFRESH_COOKIE_SET ExpiresAt={ExpiresAt} Path={Path} HttpOnly={HttpOnly} Secure={Secure} SameSite={SameSite}",
+				expiresAt,
+				cookieOptions.Path,
+				cookieOptions.HttpOnly,
+				cookieOptions.Secure,
+				cookieOptions.SameSite);
 		}
 
 		private string? GetRefreshTokenFromCookie()
@@ -162,13 +269,22 @@ namespace BusRejser.Features.Auth
 
 		private void DeleteRefreshTokenCookie()
 		{
-			Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
+			var cookieOptions = new CookieOptions
 			{
 				HttpOnly = true,
 				Secure = true,
 				SameSite = SameSiteMode.None,
 				Path = "/api/auth"
-			});
+			};
+
+			Response.Cookies.Delete(RefreshTokenCookieName, cookieOptions);
+
+			_logger.LogInformation(
+				"AUTH_REFRESH_COOKIE_CLEARED Path={Path} HttpOnly={HttpOnly} Secure={Secure} SameSite={SameSite}",
+				cookieOptions.Path,
+				cookieOptions.HttpOnly,
+				cookieOptions.Secure,
+				cookieOptions.SameSite);
 		}
 	}
 }
