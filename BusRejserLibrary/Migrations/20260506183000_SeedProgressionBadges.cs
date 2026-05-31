@@ -1,9 +1,13 @@
+using BusRejserLibrary.Database;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace BusRejserLibrary.Migrations
 {
+    [DbContext(typeof(BusPlanenDbContext))]
+    [Migration("20260506183000_SeedProgressionBadges")]
     public partial class SeedProgressionBadges : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
