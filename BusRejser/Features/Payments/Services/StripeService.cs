@@ -42,17 +42,18 @@ namespace BusRejser.Features.Payments.Services
 			CreateCheckoutSessionRequest request,
 			int? userId)
 		{
-			if (request == null)
-			{
-				_logger.LogWarning("CreateCheckoutSession called with null request");
-				throw new ValidationException("Request må ikke være null.");
-			}
 
 			if (string.IsNullOrWhiteSpace(request.KundeNavn))
 				throw new ValidationException("Kundenavn kræves.");
 
 			if (string.IsNullOrWhiteSpace(request.KundeEmail))
 				throw new ValidationException("Kundeemail kræves.");
+
+			if (request == null)
+			{
+				_logger.LogWarning("CreateCheckoutSession called with null request");
+				throw new ValidationException("Request må ikke være null.");
+			}
 
 			_logger.LogInformation(
 				"Creating Stripe checkout session for RejseId {RejseId}, AntalPladser {AntalPladser}, UserId {UserId}",
@@ -75,17 +76,6 @@ namespace BusRejser.Features.Payments.Services
 			if (rejse == null)
 			{
 				_logger.LogWarning("Rejse not found for RejseId {RejseId}", request.RejseId);
-				throw new NotFoundException("Rejse findes ikke.");
-			}
-
-			if (!rejse.IsPublished || rejse.StartAt <= DateTime.UtcNow)
-			{
-				_logger.LogWarning(
-					"Checkout rejected because RejseId {RejseId} is not public bookable. IsPublished {IsPublished}, StartAt {StartAt}",
-					rejse.RejseId,
-					rejse.IsPublished,
-					rejse.StartAt);
-
 				throw new NotFoundException("Rejse findes ikke.");
 			}
 

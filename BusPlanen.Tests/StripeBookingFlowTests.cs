@@ -1,13 +1,11 @@
-using BusRejser.Exceptions;
-using BusRejser.Features.Bookings.Services;
-using BusRejser.Features.Payments.DTOs;
-using BusRejser.Features.Payments.Services;
-using BusRejser.Features.Payments.Services.Interfaces;
+using BusRejser.DTOs;
 using BusRejser.Options;
+using BusRejser.Services;
 using BusRejserLibrary.Database;
 using BusRejserLibrary.Enums;
 using BusRejserLibrary.Models;
 using BusRejserLibrary.Repositories;
+using BusRejserLibrary.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -76,55 +74,6 @@ public class StripeBookingFlowTests
 		Assert.Equal(
 			"https://frontend.example.com/betaling/cancel",
 			capturedOptions.CancelUrl);
-	}
-
-	[Fact]
-	public void CreateCheckoutSession_RejectsUnpublishedRejse()
-	{
-		using var context = CreateContext();
-
-		var rejse = CreateValidRejseEntity(1);
-		rejse.IsPublished = false;
-		context.Rejser.Add(rejse);
-		context.SaveChanges();
-
-		var stripeClient = new Mock<IStripeCheckoutSessionClient>();
-		var stripeService = CreateStripeService(context, stripeClient);
-
-		Assert.Throws<NotFoundException>(() => stripeService.CreateCheckoutSession(new CreateCheckoutSessionRequest
-		{
-			RejseId = 1,
-			AntalPladser = 2,
-			KundeNavn = "Test User",
-			KundeEmail = "test@test.dk"
-		}, userId: null));
-
-		stripeClient.Verify(x => x.Create(It.IsAny<SessionCreateOptions>()), Times.Never);
-	}
-
-	[Fact]
-	public void CreateCheckoutSession_RejectsPastRejse()
-	{
-		using var context = CreateContext();
-
-		var rejse = CreateValidRejseEntity(1);
-		rejse.StartAt = DateTime.UtcNow.AddDays(-2);
-		rejse.EndAt = DateTime.UtcNow.AddDays(-1);
-		context.Rejser.Add(rejse);
-		context.SaveChanges();
-
-		var stripeClient = new Mock<IStripeCheckoutSessionClient>();
-		var stripeService = CreateStripeService(context, stripeClient);
-
-		Assert.Throws<NotFoundException>(() => stripeService.CreateCheckoutSession(new CreateCheckoutSessionRequest
-		{
-			RejseId = 1,
-			AntalPladser = 2,
-			KundeNavn = "Test User",
-			KundeEmail = "test@test.dk"
-		}, userId: null));
-
-		stripeClient.Verify(x => x.Create(It.IsAny<SessionCreateOptions>()), Times.Never);
 	}
 
 	[Fact]
@@ -244,31 +193,6 @@ public class StripeBookingFlowTests
 		);
 	}
 
-	private static StripeService CreateStripeService(
-		BusPlanenDbContext context,
-		Mock<IStripeCheckoutSessionClient> stripeClient)
-	{
-		var bookingRepo = new Mock<IBookingRepository>();
-		var rejseRepo = new Mock<IRejseRepository>();
-		var userRepo = new Mock<IUserRepository>();
-		var bookingLogger = new Mock<ILogger<BookingService>>();
-		var stripeLogger = new Mock<ILogger<StripeService>>();
-
-		return new StripeService(
-			new RejseRepository(context),
-			CreateBookingService(bookingRepo, rejseRepo, userRepo, bookingLogger),
-			stripeClient.Object,
-			Options.Create(new FrontendOptions
-			{
-				BaseUrl = "https://frontend.test",
-				PaymentSuccessPath = "/betaling/success",
-				PaymentCancelPath = "/betaling/cancel"
-			}),
-			CreateStripeOptions(),
-			stripeLogger.Object
-		);
-	}
-
 	private static Rejse CreateValidRejse(int rejseId, int maxSeats = 50, int bookedSeats = 10)
 	{
 		var rejse = Rejse.Create(
@@ -276,10 +200,6 @@ public class StripeBookingFlowTests
 			"København",
 			"Danmark",
 			"København",
-			null,
-			null,
-			null,
-			null,
 			DateTime.UtcNow.AddDays(2),
 			DateTime.UtcNow.AddDays(3),
 			100m,
@@ -304,10 +224,6 @@ public class StripeBookingFlowTests
 			"Copenhagen",
 			"Denmark",
 			"Copenhagen",
-			null,
-			null,
-			null,
-			null,
 			DateTime.UtcNow.AddDays(2),
 			DateTime.UtcNow.AddDays(3),
 			100m,

@@ -5,7 +5,6 @@ using BusRejser.Mappers;
 using BusRejserLibrary.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace BusRejser.Features.Rejser
 {
@@ -25,14 +24,6 @@ namespace BusRejser.Features.Rejser
 		public ActionResult<IEnumerable<RejseResponse>> GetAll()
 		{
 			var rejser = _service.GetAll();
-			if (!IsStaff())
-			{
-				var now = DateTime.UtcNow;
-				rejser = rejser
-					.Where(IsPublicBookable)
-					.ToList();
-			}
-
 			var result = rejser.Select(RejseMapper.ToResponse);
 
 			return Ok(result);
@@ -44,9 +35,6 @@ namespace BusRejser.Features.Rejser
 		{
 			var rejse = _service.GetById(id);
 			if (rejse == null)
-				return NotFound(new ErrorResponse { Message = "Rejse blev ikke fundet." });
-
-			if (!IsStaff() && !IsPublicBookable(rejse))
 				return NotFound(new ErrorResponse { Message = "Rejse blev ikke fundet." });
 
 			return Ok(RejseMapper.ToResponse(rejse));
@@ -129,7 +117,7 @@ namespace BusRejser.Features.Rejser
 			var now = DateTime.UtcNow;
 
 			var rejser = _service.GetAll()
-				.Where(r => IsPublicBookable(r, now))
+				.Where(r => r.IsPublished && r.StartAt > now)
 				.Select(RejseMapper.ToResponse);
 
 			return Ok(rejser);
@@ -141,26 +129,10 @@ namespace BusRejser.Features.Rejser
 		{
 			var rejse = _service.GetById(id);
 
-			if (rejse == null || !IsPublicBookable(rejse))
+			if (rejse == null || !rejse.IsPublished)
 				return NotFound();
 
 			return Ok(RejseMapper.ToResponse(rejse));
-		}
-
-		private bool IsStaff()
-		{
-			var role = User.FindFirst(ClaimTypes.Role)?.Value;
-			return role == "Admin" || role == "Medarbejder";
-		}
-
-		private static bool IsPublicBookable(Rejse rejse)
-		{
-			return IsPublicBookable(rejse, DateTime.UtcNow);
-		}
-
-		private static bool IsPublicBookable(Rejse rejse, DateTime now)
-		{
-			return rejse.IsPublished && rejse.StartAt > now;
 		}
 	}
 }
