@@ -352,12 +352,17 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("frontend");
 app.UseRateLimiter();
+
+app.UseDefaultFiles();
 app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
 app.MapControllers();
+
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
